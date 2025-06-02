@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Results - Distributed Hashcat Cracking{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-key"></i> Results</h1>
+        {% if task_id %}
+        <a href="/tasks/{{ task_id }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Task
+        </a>
+        {% endif %}
+    </div>
+    
+    <!-- Result Filters -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="card-title mb-0">Filters</h5>
+        </div>
+        <div class="card-body">
+            <form id="filter-form" action="/results" method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="task_id" class="form-label">Task</label>
+                    <input type="text" class="form-control" id="task_id" name="task_id" value="{{ task_id or '' }}" placeholder="Filter by task ID">
+                </div>
+                <div class="col-md-3">
+                    <label for="hash_value" class="form-label">Hash</label>
+                    <input type="text" class="form-control" id="hash_value" name="hash_value" value="{{ hash_value or '' }}" placeholder="Search by hash value">
+                </div>
+                <div class="col-md-3">
+                    <label for="plaintext" class="form-label">Password</label>
+                    <input type="text" class="form-control" id="plaintext" name="plaintext" value="{{ plaintext or '' }}" placeholder="Search by password">
+                </div>
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">Apply Filters</button>
+                    <button type="button" id="clear-filters" class="btn btn-outline-secondary">Clear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Results Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Cracked Passwords</h5>
+                <span class="badge bg-success">{{ results|length }} Results</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Hash</th>
+                            <th>Password</th>
+                            <th>Task</th>
+                            <th>Agent</th>
+                            <th>Cracked At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                        <tr>
+                            <td class="text-truncate" style="max-width: 200px;" title="{{ result.hash_value }}" data-hash="{{ result.hash_value }}">
+                                {{ result.hash_value }}
+                                <button class="btn btn-sm btn-link copy-hash" data-hash="{{ result.hash_value }}" title="Copy hash">
+                                    <i class="bi bi-clipboard-plus"></i>
+                                </button>
+                            </td>
+                            <td data-plaintext="{{ result.plaintext }}">
+                                {{ result.plaintext }}
+                                <button class="btn btn-sm btn-link copy-plaintext" data-plaintext="{{ result.plaintext }}" title="Copy password">
+                                    <i class="bi bi-clipboard-plus"></i>
+                                </button>
+                            </td>
+                            <td>
+                                <a href="/tasks/{{ result.task_id }}">View Task</a>
+                            </td>
+                            <td>
+                                <a href="/agents/{{ result.agent_id }}">View Agent</a>
+                            </td>
+                            <td>{{ result.cracked_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                <button class="btn btn-sm btn-link copy-both" 
+                                        data-hash="{{ result.hash_value }}" 
+                                        data-plaintext="{{ result.plaintext }}" 
+                                        title="Copy hash:password">
+                                    <i class="bi bi-clipboard-check"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center">No results found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            {% if results %}
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" id="copyAllBtn">
+                        <i class="bi bi-clipboard"></i> Copy All Passwords
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" id="copyHashPwBtn">
+                        <i class="bi bi-clipboard"></i> Copy Hash:Password Format
+                    </button>
+                </div>
+                <div>
+                    <button id="export-csv" class="btn btn-sm btn-success">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+                    </button>
+                    <button id="export-txt" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-file-earmark-text"></i> Export TXT
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Hidden div with data attributes for JavaScript -->
+<div id="results-data" class="d-none">
+    {% for result in results %}
+    <div class="result-item" 
+         data-hash="{{ result.hash_value }}" 
+         data-plaintext="{{ result.plaintext }}">
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Toast container for notifications -->
+<div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+
+<!-- Include external JavaScript file -->
+<script src="/static/js/results.js"></script>
+{% endblock %}

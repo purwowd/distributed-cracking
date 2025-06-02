@@ -1,0 +1,79 @@
+/* Custom styles for Distributed Hashcat Cracking Web UI */
+
+/* Dashboard styles */
+.progress {
+    height: 10px;
+    margin-bottom: 5px;
+}
+
+.card-header .badge {
+    font-size: 0.8rem;
+}
+
+.text-truncate {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Task detail styles */
+.task-info-box {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+/* Agent card styles */
+.agent-card {
+    transition: transform 0.2s;
+}
+
+.agent-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* Results table styles */
+.hash-column {
+    font-family: monospace;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Sidebar active link */
+.nav-link.active {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-left: 4px solid #0d6efd;
+}
+
+/* Custom card header icons */
+.card-header i {
+    margin-right: 5px;
+}
+
+/* Status badges */
+.status-badge {
+    min-width: 80px;
+    text-align: center;
+}
+
+/* Form styles */
+.form-label.required::after {
+    content: " *";
+    color: #dc3545;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-title {
+        font-size: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+}

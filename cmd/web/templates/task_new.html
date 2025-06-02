@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}New Task - Distributed Hashcat Cracking{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-plus-circle"></i> New Task</h1>
+        <a href="/tasks" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Tasks
+        </a>
+    </div>
+    
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="card-title mb-0">Task Details</h5>
+        </div>
+        <div class="card-body">
+            <form action="/tasks/new" method="post">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Task Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="priority" class="form-label">Priority</label>
+                        <select class="form-select" id="priority" name="priority">
+                            <option value="1">Low</option>
+                            <option value="2" selected>Medium</option>
+                            <option value="3">High</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="hash_type" class="form-label">Hash Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="hash_type" name="hash_type" required>
+                            {% for hash_type in hash_types %}
+                            <option value="{{ hash_type }}">{{ hash_type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="hash_type_id" class="form-label">Hashcat Hash Type ID</label>
+                        <input type="number" class="form-control" id="hash_type_id" name="hash_type_id" placeholder="Optional, e.g. 0 for MD5">
+                        <div class="form-text">If using a custom hash type, specify the hashcat hash mode number</div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="hashes" class="form-label">Hashes <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="hashes" name="hashes" rows="5" required placeholder="Enter one hash per line"></textarea>
+                </div>
+                
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Attack Configuration</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="attack_mode" class="form-label">Attack Mode</label>
+                                <select class="form-select" id="attack_mode" name="attack_mode">
+                                    <option value="0" selected>Dictionary Attack (0)</option>
+                                    <option value="1">Combination Attack (1)</option>
+                                    <option value="3">Brute Force/Mask Attack (3)</option>
+                                    <option value="6">Hybrid Wordlist + Mask (6)</option>
+                                    <option value="7">Hybrid Mask + Wordlist (7)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="wordlist_section">
+                            <label for="wordlist_path" class="form-label">Wordlist Path</label>
+                            <input type="text" class="form-control" id="wordlist_path" name="wordlist_path" placeholder="/path/to/wordlist.txt">
+                        </div>
+                        
+                        <div class="mb-3" id="rule_section">
+                            <label for="rule_path" class="form-label">Rule Path</label>
+                            <input type="text" class="form-control" id="rule_path" name="rule_path" placeholder="/path/to/rules.rule">
+                        </div>
+                        
+                        <div class="mb-3" id="mask_section">
+                            <label for="mask" class="form-label">Mask</label>
+                            <input type="text" class="form-control" id="mask" name="mask" placeholder="?a?a?a?a?a?a?a?a">
+                            <div class="form-text">
+                                ?l = lowercase, ?u = uppercase, ?d = digits, ?s = special, ?a = all
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Show/hide attack mode specific fields
+    document.getElementById('attack_mode').addEventListener('change', function() {
+        const attackMode = parseInt(this.value);
+        const wordlistSection = document.getElementById('wordlist_section');
+        const ruleSection = document.getElementById('rule_section');
+        const maskSection = document.getElementById('mask_section');
+        
+        // Reset visibility
+        wordlistSection.style.display = 'none';
+        ruleSection.style.display = 'none';
+        maskSection.style.display = 'none';
+        
+        // Show relevant sections based on attack mode
+        switch(attackMode) {
+            case 0: // Dictionary
+                wordlistSection.style.display = 'block';
+                ruleSection.style.display = 'block';
+                break;
+            case 1: // Combination
+                wordlistSection.style.display = 'block';
+                break;
+            case 3: // Brute Force/Mask
+                maskSection.style.display = 'block';
+                break;
+            case 6: // Hybrid Wordlist + Mask
+                wordlistSection.style.display = 'block';
+                maskSection.style.display = 'block';
+                break;
+            case 7: // Hybrid Mask + Wordlist
+                wordlistSection.style.display = 'block';
+                maskSection.style.display = 'block';
+                break;
+        }
+    });
+    
+    // Trigger change event to set initial visibility
+    document.getElementById('attack_mode').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

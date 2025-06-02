@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Add Agent - Distributed Hashcat Cracking{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-pc-display"></i> Add New Agent</h1>
+        <div>
+            <a href="/agents" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Agents
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Agent Registration</h5>
+                </div>
+                <div class="card-body">
+                    <form action="/agents/add" method="post">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Agent Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                            <div class="form-text">A unique name to identify this agent</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="hostname" class="form-label">Hostname</label>
+                            <input type="text" class="form-control" id="hostname" name="hostname" required>
+                            <div class="form-text">The hostname of the machine running the agent</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="ip_address" class="form-label">IP Address</label>
+                            <input type="text" class="form-control" id="ip_address" name="ip_address" required>
+                            <div class="form-text">The IP address of the agent</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="api_key" class="form-label">API Key</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="api_key" name="api_key" readonly value="{{ api_key }}">
+                                <button class="btn btn-outline-secondary" type="button" id="generate-key">
+                                    <i class="bi bi-arrow-repeat"></i> Regenerate
+                                </button>
+                            </div>
+                            <div class="form-text">This key will be used to authenticate the agent</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="hardware_info" class="form-label">Hardware Information (Optional)</label>
+                            <textarea class="form-control" id="hardware_info" name="hardware_info" rows="3" placeholder='{"cpu": "Intel Core i9", "ram": "64GB", "os": "Ubuntu 22.04"}'></textarea>
+                            <div class="form-text">JSON format of hardware details</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Register Agent</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer">
+                    <div class="alert alert-info mb-0">
+                        <h6>How to connect your agent:</h6>
+                        <ol>
+                            <li>Register the agent using this form</li>
+                            <li>Install the agent software on your target machine</li>
+                            <li>Configure the agent with the API key provided</li>
+                            <li>Start the agent to connect to this server</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const generateKeyBtn = document.getElementById('generate-key');
+        const apiKeyInput = document.getElementById('api_key');
+        
+        generateKeyBtn.addEventListener('click', function() {
+            // Generate a random API key
+            const randomKey = 'api_key_' + Array(24)
+                .fill(0)
+                .map(() => Math.random().toString(36).charAt(2))
+                .join('');
+            
+            apiKeyInput.value = randomKey;
+        });
+    });
+</script>
+{% endblock %}
