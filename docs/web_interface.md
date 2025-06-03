@@ -6,34 +6,27 @@ The Distributed Hashcat Cracking system includes a web interface for monitoring 
 
 There are several ways to start the web interface:
 
-### Option 1: Using the start.py script (recommended)
+### Option 1: Using environment variables
 
-The `start.py` script provides a convenient way to start all components of the system, including the web interface:
+Configure the web interface using environment variables in your `.env` file:
 
-```bash
-# Start all components (server, web interface, and one agent)
-python start.py
-
-# Start only the web interface
-python start.py --web-only
-
-# Start with custom web port
-python start.py --web-port 9090
-
-# Start in debug mode (enables auto-reload)
-python start.py --debug
-
-# Show output from all processes
-python start.py --verbose
+```
+# Web interface settings
+WEB_HOST=0.0.0.0  # Listen on all interfaces
+WEB_PORT=8081     # Default web port
 ```
 
-### Option 2: Directly running the web module
+Then start the web interface:
 
 ```bash
 # From the project root
 python -m cmd.web
+```
 
-# With custom host and port
+### Option 2: Using command-line arguments
+
+```bash
+# From the project root
 python -m cmd.web --host 127.0.0.1 --port 9090
 
 # With auto-reload for development
@@ -47,6 +40,38 @@ python -m cmd.web --reload
 cd cmd/web
 python app.py
 ```
+
+## Login System
+
+The system includes a secure authentication system:
+
+### Default Credentials
+
+When using the mock database (development mode), the following credentials are available:
+
+| Username | Password | Role  |
+|----------|----------|-------|
+| admin    | password | ADMIN |
+| user     | password | USER  |
+
+### Login Flow
+
+1. Accessing any protected page redirects unauthenticated users to the login page
+2. After successful login, users are redirected to the dashboard
+3. The logout button redirects users back to the login page
+
+### Authentication Features
+
+- JWT tokens stored in HTTP-only cookies
+- Role-based access control (admin, user, viewer)
+- Bcrypt password hashing
+- Configurable token expiration
+
+### Database Compatibility
+
+The login system works with both:
+- Mock database (development mode)
+- MongoDB (production mode)
 
 ## Web Interface Features
 
@@ -116,25 +141,50 @@ The web interface uses Bootstrap 5 for styling and can be customized by modifyin
 
 ## Security Considerations
 
-The current implementation does not include authentication or authorization. For production use, consider adding:
+The system includes authentication and authorization features:
 
-- User authentication
-- Role-based access control
-- HTTPS support
-- Rate limiting
+- **JWT-based Authentication**: Secure login with HTTP-only cookies
+- **Role-based Access Control**: Different permission levels (admin, user, viewer)
+- **Password Security**: Bcrypt hashing for secure password storage
+
+For additional security in production environments:
+
+- Enable HTTPS with valid certificates
+- Implement rate limiting for login attempts
+- Consider IP-based access restrictions
+- Set up proper firewall rules
+
+See [security.md](security.md) for comprehensive security guidelines.
 
 ## Troubleshooting
 
 Common issues:
 
-1. **Web interface can't connect to the server**
-   - Ensure the central server is running
-   - Check that the API_URL in the configuration is correct
+1. **Authentication Issues**
+   - **Login Failures**: Ensure you're using the correct credentials. Default mock database credentials are `admin`/`password` or `user`/`password`.
+   - **Session Not Persisting**: Check that cookies are enabled in your browser and that the JWT token is being properly stored.
+   - **Permission Denied**: Certain operations require admin privileges. Ensure you're logged in with an admin account.
 
-2. **Charts not displaying**
+2. **Web interface can't connect to the server**
+   - Ensure the central server is running (`python -m cmd.server`)
+   - Check that the API_URL in the configuration is correct
+   - Verify network connectivity between web interface and server
+   - For multi-node setups, ensure proper network configuration
+
+3. **Agent Connection Issues**
+   - Verify agents are properly registered and connected
+   - Check agent logs for connection errors
+   - For cloud agents, ensure proper network configuration as described in [deployment.md](deployment.md)
+
+4. **Charts not displaying**
    - Ensure Chart.js is loaded correctly
    - Check browser console for JavaScript errors
 
-3. **Static files not loading**
+5. **Static files not loading**
    - Verify that the static files are being served correctly
    - Check that file paths are correct in templates
+
+6. **Database Connection Issues**
+   - If using MongoDB, verify the database is running and accessible
+   - Check connection string in `.env` file
+   - See [mongodb.md](mongodb.md) for detailed MongoDB troubleshooting

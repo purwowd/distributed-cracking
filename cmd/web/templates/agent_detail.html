@@ -3,41 +3,43 @@
 {% block title %}Agent Details - Distributed Hashcat Cracking{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-pc-display"></i> Agent Details</h1>
+<div class="py-4">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 class="text-2xl font-bold text-gray-200 flex items-center">
+            <i class="fa-solid fa-desktop mr-2 text-blue-400"></i> Agent Details
+        </h1>
         <div>
-            <a href="/agents" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Agents
+            <a href="/agents" class="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-all duration-200 shadow-md flex items-center">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Back to Agents
             </a>
         </div>
     </div>
     
-    <div class="row">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Agent Overview -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header {% if agent.is_available is defined and agent.is_available() %}bg-success text-white{% elif agent.status is defined and agent.status == 'online' %}bg-success text-white{% elif agent.current_task_id is defined and agent.current_task_id %}bg-primary text-white{% elif agent.status is defined and agent.status == 'busy' %}bg-primary text-white{% else %}bg-secondary text-white{% endif %}">
-                    <h5 class="card-title mb-0">{{ agent.name if agent.name is defined else agent.get('name', 'Unknown') }}</h5>
+        <div class="mb-6">
+            <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-700">
+                <div class="{% if agent.is_available is defined and agent.is_available() %}bg-green-600 text-white{% elif agent.status is defined and agent.status == 'online' %}bg-green-600 text-white{% elif agent.current_task_id is defined and agent.current_task_id %}bg-blue-600 text-white{% elif agent.status is defined and agent.status == 'busy' %}bg-blue-600 text-white{% else %}bg-gray-700 text-white{% endif %} px-4 py-3 border-b border-gray-700">
+                    <h5 class="font-semibold">{{ agent.name if agent.name is defined else agent.get('name', 'Unknown') }}</h5>
                 </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <p class="mb-1"><strong>Status:</strong>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Status:</span>
                                 {% if agent.is_available is defined and agent.is_available() or agent.status is defined and agent.status == 'online' %}
-                                <span class="badge bg-success">Online</span>
+                                <span class="bg-gray-900 text-green-400 text-xs font-medium px-2.5 py-1 rounded-md border border-green-500">Online</span>
                                 {% elif agent.current_task_id is defined and agent.current_task_id or agent.status is defined and agent.status == 'busy' %}
-                                <span class="badge bg-primary">Busy</span>
+                                <span class="bg-gray-900 text-blue-400 text-xs font-medium px-2.5 py-1 rounded-md border border-blue-500">Busy</span>
                                 {% else %}
-                                <span class="badge bg-secondary">Offline</span>
+                                <span class="bg-gray-900 text-gray-400 text-xs font-medium px-2.5 py-1 rounded-md border border-gray-500">Offline</span>
                                 {% endif %}
                             </p>
-                            <p class="mb-1"><strong>Hostname:</strong> {{ agent.hostname if agent.hostname is defined else agent.get('hostname', 'Unknown') }}</p>
-                            <p class="mb-1"><strong>IP Address:</strong> {{ agent.ip_address if agent.ip_address is defined else agent.get('ip_address', 'Unknown') }}</p>
-                            <p class="mb-1"><strong>API Key:</strong> {{ (agent.api_key[:8] if agent.api_key is defined else agent.get('api_key', '')[:8]) }}...</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Hostname:</span> {{ agent.hostname if agent.hostname is defined else agent.get('hostname', 'Unknown') }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">IP Address:</span> {{ agent.ip_address if agent.ip_address is defined else agent.get('ip_address', 'Unknown') }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">API Key:</span> <span class="font-mono">{{ (agent.api_key[:8] if agent.api_key is defined else agent.get('api_key', '')[:8]) }}...</span></p>
                         </div>
-                        <div class="col-md-6">
-                            <p class="mb-1"><strong>Last Seen:</strong> 
+                        <div>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Last Seen:</span> 
                                 {% if agent.last_seen is defined %}
                                     {{ agent.last_seen.strftime('%Y-%m-%d %H:%M:%S') }}
                                 {% elif agent.get('last_seen') %}
@@ -46,7 +48,7 @@
                                     Unknown
                                 {% endif %}
                             </p>
-                            <p class="mb-1"><strong>Registered:</strong> 
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Registered:</span> 
                                 {% if agent.registered_at is defined %}
                                     {{ agent.registered_at.strftime('%Y-%m-%d %H:%M:%S') }}
                                 {% elif agent.get('registered_at') %}
@@ -56,35 +58,32 @@
                                 {% endif %}
                             </p>
                             {% if agent.hashcat_version is defined and agent.hashcat_version or agent.get('hashcat_version') %}
-                            <p class="mb-1"><strong>Hashcat Version:</strong> {{ agent.hashcat_version if agent.hashcat_version is defined else agent.get('hashcat_version') }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Hashcat Version:</span> {{ agent.hashcat_version if agent.hashcat_version is defined else agent.get('hashcat_version') }}</p>
                             {% endif %}
                         </div>
                     </div>
                     
                     {% if agent.current_task_id is defined and agent.current_task_id or agent.get('current_task_id') %}
-                    <div class="alert alert-primary">
-                        <h6>Current Task</h6>
+                    <div class="bg-gray-900 border-l-4 border-blue-500 p-3 mt-3 rounded border border-gray-700">
+                        <h6 class="font-semibold mb-2 text-blue-400">Current Task</h6>
                         {% if current_task %}
-                        <p class="mb-1"><strong>Name:</strong> {{ current_task.name if current_task.name is defined else current_task.get('name', 'Unknown') }}</p>
-                        <p class="mb-1"><strong>Status:</strong> {{ current_task.status if current_task.status is defined else current_task.get('status', 'Unknown') }}</p>
-                        <p class="mb-1"><strong>Progress:</strong></p>
-                        <div class="progress mb-2">
-                            {% set progress = current_task.progress if current_task.progress is defined else current_task.get('progress', 0) %}
-                            {% set progress_percent = (progress * 100) | round(1) %}
-                            <div class="progress-bar" role="progressbar" data-progress="{{ progress_percent }}" aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
-                                {{ progress_percent }}%
-                            </div>
+                        <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Name:</span> {{ current_task.name if current_task.name is defined else current_task.get('name', 'Unknown') }}</p>
+                        <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Status:</span> {{ current_task.status if current_task.status is defined else current_task.get('status', 'Unknown') }}</p>
+                        <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Progress:</span></p>
+                        {% set progress = current_task.progress if current_task.progress is defined else current_task.get('progress', 0) %}
+                        {% set progress_percent = (progress * 100) | round(1) %}
+                        <!-- Progress bar container with no Jinja2 in HTML attributes -->
+                        <div class="w-full bg-gray-700 rounded-full h-2.5 mb-3 overflow-hidden relative border border-gray-600">
+                            <div class="h-2.5 bg-blue-600 rounded-full absolute top-0 left-0" id="agent-progress-indicator"></div>
                         </div>
-                        <script>
-                            document.addEventListener('DOMContentLoaded', function() {
-                                const progressBar = document.querySelector('.progress-bar');
-                                const progressValue = progressBar.getAttribute('data-progress');
-                                progressBar.style.width = progressValue + '%';
-                            });
-                        </script>
-                        <a href="/tasks/{{ current_task.id if current_task.id is defined else current_task.get('id') }}" class="btn btn-sm btn-primary">View Task Details</a>
+                        <!-- Hidden span with progress data that JavaScript will read -->
+                        <span class="hidden" id="agent-progress-data">{{ progress_percent }}</span>
+                        <div class="text-xs text-gray-400 mb-3">{{ progress_percent }}%</div>
+                        <a href="/tasks/{{ current_task.id if current_task.id is defined else current_task.get('id') }}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-1.5 px-3 rounded transition-all duration-200 shadow-md inline-flex items-center">
+                            <i class="fas fa-eye mr-1"></i> View Task Details
+                        </a>
                         {% else %}
-                        <p>Task ID: {{ agent.current_task_id if agent.current_task_id is defined else agent.get('current_task_id') }} (Task not found)</p>
+                        <p class="text-sm">Task ID: {{ agent.current_task_id if agent.current_task_id is defined else agent.get('current_task_id') }} (Task not found)</p>
                         {% endif %}
                     </div>
                     {% endif %}
@@ -93,35 +92,35 @@
         </div>
         
         <!-- Hardware Info -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-info text-white">
-                    <h5 class="card-title mb-0">Hardware Information</h5>
+        <div class="mb-6">
+            <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-700">
+                <div class="bg-gray-900 px-4 py-3 border-b border-gray-700">
+                    <h5 class="font-semibold text-gray-200">Hardware Information</h5>
                 </div>
-                <div class="card-body">
+                <div class="p-4">
                     {% if agent.gpu_info is defined and agent.gpu_info or agent.get('gpu_info') %}
-                    <h6>GPU Information</h6>
-                    <div class="table-responsive mb-4">
-                        <table class="table table-striped">
-                            <thead>
+                    <h6 class="font-semibold text-blue-400 mb-2">GPU Information</h6>
+                    <div class="overflow-x-auto mb-6">
+                        <table class="w-full text-sm text-left text-gray-300">
+                            <thead class="text-xs text-gray-400 uppercase bg-gray-900">
                                 <tr>
-                                    <th>Name</th>
-                                    <th>Memory</th>
-                                    <th>Details</th>
+                                    <th class="px-4 py-2">Name</th>
+                                    <th class="px-4 py-2">Memory</th>
+                                    <th class="px-4 py-2">Details</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for gpu in (agent.gpu_info if agent.gpu_info is defined else agent.get('gpu_info', [])) %}
-                                <tr>
-                                    <td>{{ gpu.name if gpu.name is defined else gpu.get('name', 'Unknown') }}</td>
-                                    <td>{% if gpu.memory_total_mb is defined and gpu.memory_total_mb or gpu.get('memory_total_mb') %}{{ gpu.memory_total_mb if gpu.memory_total_mb is defined else gpu.get('memory_total_mb') }} MB{% else %}N/A{% endif %}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#gpu{{ loop.index }}">
+                                <tr class="{% if loop.index is even %}bg-gray-700{% endif %} border-b border-gray-700 hover:bg-gray-700">
+                                    <td class="px-4 py-3">{{ gpu.name if gpu.name is defined else gpu.get('name', 'Unknown') }}</td>
+                                    <td class="px-4 py-3">{% if gpu.memory_total_mb is defined and gpu.memory_total_mb or gpu.get('memory_total_mb') %}{{ gpu.memory_total_mb if gpu.memory_total_mb is defined else gpu.get('memory_total_mb') }} MB{% else %}N/A{% endif %}</td>
+                                    <td class="px-4 py-3">
+                                        <button class="text-blue-400 border border-blue-500 hover:bg-blue-600 hover:text-white text-xs font-medium py-1 px-2 rounded transition-all duration-200 shadow-sm" type="button" onclick="toggleDetails('gpu{{ loop.index }}')">
                                             Details
                                         </button>
-                                        <div class="collapse mt-2" id="gpu{{ loop.index }}">
-                                            <div class="card card-body">
-                                                <pre class="mb-0">{{ gpu | tojson(indent=2) }}</pre>
+                                        <div id="gpu{{ loop.index }}" class="hidden mt-2">
+                                            <div class="bg-gray-900 rounded p-3 text-xs border border-gray-700">
+                                                <pre class="whitespace-pre-wrap font-mono text-gray-300">{{ gpu | tojson(indent=2) }}</pre>
                                             </div>
                                         </div>
                                     </td>
@@ -130,31 +129,32 @@
                             </tbody>
                         </table>
                     </div>
+
                     {% else %}
-                    <div class="alert alert-warning">No GPU information available</div>
+                    <div class="bg-gray-900 border-l-4 border-yellow-500 text-yellow-400 p-4 rounded border border-gray-700">
+                        No GPU information available
+                    </div>
                     {% endif %}
                     
                     {% if agent.cpu_info is defined and agent.cpu_info or agent.get('cpu_info') %}
-                    <h6>CPU Information</h6>
-                    <div class="card">
-                        <div class="card-body">
-                            <pre class="mb-0">{{ agent.cpu_info | tojson(indent=2) if agent.cpu_info is defined else agent.get('cpu_info') | tojson(indent=2) }}</pre>
-                        </div>
+                    <h6 class="font-semibold text-blue-400 mb-2 mt-6">CPU Information</h6>
+                    <div class="bg-gray-900 rounded p-4 border border-gray-700">
+                        <pre class="whitespace-pre-wrap font-mono text-xs text-gray-300">{{ agent.cpu_info | tojson(indent=2) if agent.cpu_info is defined else agent.get('cpu_info') | tojson(indent=2) }}</pre>
                     </div>
                     {% endif %}
                     
                     {% if agent.hardware_info is defined and agent.hardware_info or agent.get('hardware_info') %}
-                    <h6>System Information</h6>
-                    <ul class="list-group list-group-flush">
+                    <h6 class="font-semibold text-blue-400 mb-2 mt-6">System Information</h6>
+                    <ul class="divide-y divide-gray-700">
                         {% set hw = agent.hardware_info if agent.hardware_info is defined else agent.get('hardware_info', {}) %}
                         {% if hw.cpu is defined and hw.cpu or hw.get('cpu') %}
-                        <li class="list-group-item"><strong>CPU:</strong> {{ hw.cpu if hw.cpu is defined else hw.get('cpu') }}</li>
+                        <li class="py-3 text-sm"><span class="font-semibold text-blue-400">CPU:</span> {{ hw.cpu if hw.cpu is defined else hw.get('cpu') }}</li>
                         {% endif %}
                         {% if hw.ram is defined and hw.ram or hw.get('ram') %}
-                        <li class="list-group-item"><strong>RAM:</strong> {{ hw.ram if hw.ram is defined else hw.get('ram') }}</li>
+                        <li class="py-3 text-sm"><span class="font-semibold text-blue-400">RAM:</span> {{ hw.ram if hw.ram is defined else hw.get('ram') }}</li>
                         {% endif %}
                         {% if hw.os is defined and hw.os or hw.get('os') %}
-                        <li class="list-group-item"><strong>OS:</strong> {{ hw.os if hw.os is defined else hw.get('os') }}</li>
+                        <li class="py-3 text-sm"><span class="font-semibold text-blue-400">OS:</span> {{ hw.os if hw.os is defined else hw.get('os') }}</li>
                         {% endif %}
                     </ul>
                     {% endif %}
@@ -165,27 +165,29 @@
     
     <!-- Agent Capabilities -->
     {% if agent.capabilities is defined and agent.capabilities or agent.get('capabilities') %}
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-light">
-            <h5 class="card-title mb-0">Agent Capabilities</h5>
+    <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6 border border-gray-700">
+        <div class="bg-gray-900 px-4 py-3 border-b border-gray-700">
+            <h5 class="font-semibold text-gray-200">Agent Capabilities</h5>
         </div>
-        <div class="card-body">
-            <pre>{{ agent.capabilities | tojson(indent=2) if agent.capabilities is defined else agent.get('capabilities') | tojson(indent=2) }}</pre>
+        <div class="p-4">
+            <pre class="whitespace-pre-wrap font-mono text-xs bg-gray-900 p-4 rounded border border-gray-700 text-gray-300">{{ agent.capabilities | tojson(indent=2) if agent.capabilities is defined else agent.get('capabilities') | tojson(indent=2) }}</pre>
         </div>
     </div>
     {% endif %}
     
     <!-- Agent Metadata -->
     {% if agent.metadata is defined and agent.metadata or agent.get('metadata') %}
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="card-title mb-0">Additional Metadata</h5>
+    <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-700">
+        <div class="bg-gray-900 px-4 py-3 border-b border-gray-700">
+            <h5 class="font-semibold text-gray-200">Additional Metadata</h5>
         </div>
-        <div class="card-body">
-            <pre>{{ agent.metadata | tojson(indent=2) if agent.metadata is defined else agent.get('metadata') | tojson(indent=2) }}</pre>
+        <div class="p-4">
+            <pre class="whitespace-pre-wrap font-mono text-xs bg-gray-900 p-4 rounded border border-gray-700 text-gray-300">{{ agent.metadata | tojson(indent=2) if agent.metadata is defined else agent.get('metadata') | tojson(indent=2) }}</pre>
         </div>
     </div>
     {% endif %}
 </div>
+{% block extra_js %}
+<script src="/static/js/agent-details.js"></script>
 {% endblock %}
-
+{% endblock %}

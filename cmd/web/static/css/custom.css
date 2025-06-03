@@ -6,6 +6,40 @@
     margin-bottom: 5px;
 }
 
+/* Progress bar styles */
+.progress-container {
+    width: 100%;
+    background-color: #e5e7eb;
+    border-radius: 9999px;
+    height: 0.625rem;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+}
+
+.progress-value {
+    height: 0.625rem;
+    border-radius: 9999px;
+    background-color: #2563eb;
+    transition: width 0.5s ease-in-out;
+}
+
+/* Legacy progress bar styles - keeping for backward compatibility */
+.progress-bar-container {
+    width: 100%;
+    background-color: #e5e7eb;
+    border-radius: 9999px;
+    height: 0.625rem;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 0.625rem;
+    border-radius: 9999px;
+    background-color: #2563eb;
+    transition: width 0.5s ease-in-out;
+}
+
 .card-header .badge {
     font-size: 0.8rem;
 }

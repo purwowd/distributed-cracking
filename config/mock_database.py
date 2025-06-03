@@ -215,12 +215,40 @@ mock_results = [
     }
 ]
 
+# Sample data for users
+mock_users = [
+    {
+        "id": "user1",
+        "username": "admin",
+        "email": "admin@example.com",
+        "hashed_password": "$2b$12$fni6ozZ9aW./l.Fzp2Ubve3dUQ6C0fXvGGxhjX8AG5JODXhRID7rW",  # "password"
+        "full_name": "Administrator",
+        "role": "admin",
+        "created_at": datetime.datetime.now() - datetime.timedelta(days=30),
+        "last_login": datetime.datetime.now() - datetime.timedelta(days=1),
+        "metadata": {}
+    },
+    {
+        "id": "user2",
+        "username": "user",
+        "email": "user@example.com",
+        "hashed_password": "$2b$12$fni6ozZ9aW./l.Fzp2Ubve3dUQ6C0fXvGGxhjX8AG5JODXhRID7rW",  # "password"
+        "full_name": "Regular User",
+        "role": "user",
+        "created_at": datetime.datetime.now() - datetime.timedelta(days=15),
+        "last_login": datetime.datetime.now() - datetime.timedelta(days=3),
+        "metadata": {}
+    }
+]
+
 # Mock database client
 class MockDatabase:
     def __init__(self):
         self.tasks = mock_tasks
         self.agents = mock_agents
         self.results = mock_results
+        self.users = mock_users
+        self.performance_metrics = []
     
     async def get_tasks(self, skip: int = 0, limit: int = 100, status: Optional[str] = None) -> List[Dict[str, Any]]:
         if status:

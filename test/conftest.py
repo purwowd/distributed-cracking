@@ -4,7 +4,7 @@ import os
 from unittest.mock import patch, MagicMock
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-from config.database import get_database, connect_to_db, close_db_connection
+from config.database import Database
 
 
 @pytest.fixture
@@ -34,9 +34,9 @@ async def mock_mongodb():
     
     # Patch the database connection
     with patch('config.database.AsyncIOMotorClient', return_value=mock_client):
-        await connect_to_db()
+        await Database.connect()
         yield mock_db
-        await close_db_connection()
+        await Database.close()
 
 
 @pytest.fixture

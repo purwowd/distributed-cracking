@@ -3,94 +3,81 @@
 {% block title %}Add Agent - Distributed Hashcat Cracking{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-pc-display"></i> Add New Agent</h1>
+<div class="py-4">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+            <i class="fa-solid fa-desktop mr-2"></i> Add New Agent
+        </h1>
         <div>
-            <a href="/agents" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Agents
+            <a href="/agents" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors duration-200 flex items-center">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Back to Agents
             </a>
         </div>
     </div>
     
-    <div class="row">
-        <div class="col-md-8 mx-auto">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">Agent Registration</h5>
-                </div>
-                <div class="card-body">
-                    <form action="/agents/add" method="post">
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Agent Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
-                            <div class="form-text">A unique name to identify this agent</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="hostname" class="form-label">Hostname</label>
-                            <input type="text" class="form-control" id="hostname" name="hostname" required>
-                            <div class="form-text">The hostname of the machine running the agent</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="ip_address" class="form-label">IP Address</label>
-                            <input type="text" class="form-control" id="ip_address" name="ip_address" required>
-                            <div class="form-text">The IP address of the agent</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="api_key" class="form-label">API Key</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="api_key" name="api_key" readonly value="{{ api_key }}">
-                                <button class="btn btn-outline-secondary" type="button" id="generate-key">
-                                    <i class="bi bi-arrow-repeat"></i> Regenerate
-                                </button>
-                            </div>
-                            <div class="form-text">This key will be used to authenticate the agent</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="hardware_info" class="form-label">Hardware Information (Optional)</label>
-                            <textarea class="form-control" id="hardware_info" name="hardware_info" rows="3" placeholder='{"cpu": "Intel Core i9", "ram": "64GB", "os": "Ubuntu 22.04"}'></textarea>
-                            <div class="form-text">JSON format of hardware details</div>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Register Agent</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="card-footer">
-                    <div class="alert alert-info mb-0">
-                        <h6>How to connect your agent:</h6>
-                        <ol>
-                            <li>Register the agent using this form</li>
-                            <li>Install the agent software on your target machine</li>
-                            <li>Configure the agent with the API key provided</li>
-                            <li>Start the agent to connect to this server</li>
-                        </ol>
+    <div class="max-w-3xl mx-auto">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-blue-600 text-white px-4 py-3">
+                <h5 class="font-semibold">Agent Registration</h5>
+            </div>
+            <div class="p-4">
+                <form action="/agents/add" method="post">
+                    <div class="mb-4">
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Agent Name</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="name" name="name" required>
+                        <p class="mt-1 text-xs text-gray-500">A unique name to identify this agent</p>
                     </div>
+                    
+                    <div class="mb-4">
+                        <label for="hostname" class="block text-sm font-medium text-gray-700 mb-1">Hostname</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="hostname" name="hostname" required>
+                        <p class="mt-1 text-xs text-gray-500">The hostname of the machine running the agent</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="ip_address" class="block text-sm font-medium text-gray-700 mb-1">IP Address</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="ip_address" name="ip_address" required>
+                        <p class="mt-1 text-xs text-gray-500">The IP address of the agent</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="api_key" class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                        <div class="flex">
+                            <input type="text" class="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="api_key" name="api_key" readonly value="{{ api_key }}">
+                            <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-r-md border border-gray-300 border-l-0 transition duration-300" type="button" id="generate-key">
+                                <i class="fas fa-sync-alt mr-2"></i> Regenerate
+                            </button>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">This key will be used to authenticate the agent</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="hardware_info" class="block text-sm font-medium text-gray-700 mb-1">Hardware Information (Optional)</label>
+                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="hardware_info" name="hardware_info" rows="3" placeholder='{"cpu": "Intel Core i9", "ram": "64GB", "os": "Ubuntu 22.04"}'></textarea>
+                        <p class="mt-1 text-xs text-gray-500">JSON format of hardware details</p>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-300">Register Agent</button>
+                    </div>
+                </form>
+            </div>
+            <div class="bg-blue-50 border-t border-blue-100 px-4 py-3">
+                <div class="text-blue-800">
+                    <h6 class="font-semibold mb-2">How to connect your agent:</h6>
+                    <ol class="list-decimal pl-5 text-sm">
+                        <li class="mb-1">Register the agent using this form</li>
+                        <li class="mb-1">Install the agent software on your target machine</li>
+                        <li class="mb-1">Configure the agent with the API key provided</li>
+                        <li>Start the agent to connect to this server</li>
+                    </ol>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const generateKeyBtn = document.getElementById('generate-key');
-        const apiKeyInput = document.getElementById('api_key');
-        
-        generateKeyBtn.addEventListener('click', function() {
-            // Generate a random API key
-            const randomKey = 'api_key_' + Array(24)
-                .fill(0)
-                .map(() => Math.random().toString(36).charAt(2))
-                .join('');
-            
-            apiKeyInput.value = randomKey;
-        });
-    });
-</script>
+{% block extra_js %}
+<script src="/static/js/agent-form.js"></script>
 {% endblock %}

@@ -3,38 +3,40 @@
 {% block title %}New WPA Task - Distributed Hashcat Cracking{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-wifi"></i> New WPA Cracking Task</h1>
-        <div class="d-flex gap-2">
-            <a href="/files/upload" class="btn btn-primary">
-                <i class="bi bi-cloud-upload"></i> Upload Files
+<div class="py-4">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 class="text-2xl font-bold text-gray-200 flex items-center">
+            <i class="fa-solid fa-wifi mr-2 text-blue-400"></i> New WPA Cracking Task
+        </h1>
+        <div class="flex flex-wrap gap-2">
+            <a href="/files/upload" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-200 flex items-center shadow-md">
+                <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Upload Files
             </a>
-            <a href="/tasks" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Tasks
+            <a href="/tasks" class="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-all duration-200 flex items-center shadow-md">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Back to Tasks
             </a>
         </div>
     </div>
     
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="card-title mb-0">WPA Handshake Cracking Task</h5>
+    <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-700">
+        <div class="bg-gray-900 px-4 py-3 border-b border-gray-700">
+            <h5 class="font-semibold text-gray-200">WPA Handshake Cracking Task</h5>
         </div>
-        <div class="card-body">
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> This form will create a task using the following hashcat command:
-                <pre class="mt-2 bg-dark text-light p-2 rounded">hashcat -m 2500 -a 0 [CAPTURE_FILE] rockyou.txt -w 4 --status --status-timer=5 --potfile-disable</pre>
+        <div class="p-6">
+            <div class="bg-gray-900 border-l-4 border-blue-500 text-blue-400 p-4 mb-6 rounded border border-gray-700">
+                <i class="fas fa-info-circle mr-2"></i> This form will create a task using the following hashcat command:
+                <pre class="mt-2 bg-gray-950 text-gray-100 p-3 rounded overflow-x-auto border border-gray-700">hashcat -m 2500 -a 0 [CAPTURE_FILE] rockyou.txt -w 4 --status --status-timer=5 --potfile-disable</pre>
             </div>
 
             <form action="/tasks/new-wpa" method="post" enctype="multipart/form-data">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="name" class="form-label">Task Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="name" name="name" required>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-300 mb-1">Task Name <span class="text-red-500">*</span></label>
+                        <input type="text" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="name" name="name" required>
                     </div>
-                    <div class="col-md-6">
-                        <label for="priority" class="form-label">Priority</label>
-                        <select class="form-select" id="priority" name="priority">
+                    <div>
+                        <label for="priority" class="block text-sm font-medium text-gray-300 mb-1">Priority</label>
+                        <select class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="priority" name="priority">
                             <option value="1">Low</option>
                             <option value="2" selected>Medium</option>
                             <option value="3">High</option>
@@ -42,32 +44,32 @@
                     </div>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="description" class="form-label">Description</label>
-                    <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                <div class="mb-4">
+                    <label for="description" class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                    <textarea class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="description" name="description" rows="2"></textarea>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="capture_file" class="form-label">Capture File <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="capture_file" name="capture_file" value="{{ handshake_file }}" required>
-                    <div class="form-text">
+                <div class="mb-4">
+                    <label for="capture_file" class="block text-sm font-medium text-gray-300 mb-1">Capture File <span class="text-red-500">*</span></label>
+                    <input type="text" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="capture_file" name="capture_file" value="{{ handshake_file }}" required>
+                    <p class="mt-1 text-xs text-gray-400">
                         Enter the path to your .hccapx capture file or 
-                        <a href="/files/upload" class="text-decoration-underline">upload a new handshake file</a>
-                    </div>
+                        <a href="/files/upload" class="text-blue-400 hover:text-blue-300 underline">upload a new handshake file</a>
+                    </p>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="wordlist" class="form-label">Wordlist</label>
-                    <input type="text" class="form-control" id="wordlist" name="wordlist" value="{{ wordlist }}">
-                    <div class="form-text">
+                <div class="mb-4">
+                    <label for="wordlist" class="block text-sm font-medium text-gray-300 mb-1">Wordlist</label>
+                    <input type="text" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="wordlist" name="wordlist" value="{{ wordlist }}">
+                    <p class="mt-1 text-xs text-gray-400">
                         Default is rockyou.txt or 
-                        <a href="/files/upload" class="text-decoration-underline">upload a custom wordlist</a>
-                    </div>
+                        <a href="/files/upload" class="text-blue-400 hover:text-blue-300 underline">upload a custom wordlist</a>
+                    </p>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="workload" class="form-label">Workload Profile</label>
-                    <select class="form-select" id="workload" name="workload">
+                <div class="mb-4">
+                    <label for="workload" class="block text-sm font-medium text-gray-300 mb-1">Workload Profile</label>
+                    <select class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="workload" name="workload">
                         <option value="1">Low - Use for desktop, interactive</option>
                         <option value="2">Default - Use for normal desktop</option>
                         <option value="3">High - Use for dedicated server</option>
@@ -75,27 +77,27 @@
                     </select>
                 </div>
                 
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="status_updates" name="status_updates" checked>
-                    <label class="form-check-label" for="status_updates">
+                <div class="flex items-center mb-4">
+                    <input class="h-4 w-4 text-blue-500 focus:ring-blue-400 bg-gray-700 border-gray-600 rounded" type="checkbox" id="status_updates" name="status_updates" checked>
+                    <label class="ml-2 block text-sm text-gray-300" for="status_updates">
                         Enable status updates (--status)
                     </label>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="status_timer" class="form-label">Status Timer (seconds)</label>
-                    <input type="number" class="form-control" id="status_timer" name="status_timer" value="5" min="1">
+                <div class="mb-4">
+                    <label for="status_timer" class="block text-sm font-medium text-gray-300 mb-1">Status Timer (seconds)</label>
+                    <input type="number" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="status_timer" name="status_timer" value="5" min="1">
                 </div>
                 
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="potfile_disable" name="potfile_disable" checked>
-                    <label class="form-check-label" for="potfile_disable">
+                <div class="flex items-center mb-6">
+                    <input class="h-4 w-4 text-blue-500 focus:ring-blue-400 bg-gray-700 border-gray-600 rounded" type="checkbox" id="potfile_disable" name="potfile_disable" checked>
+                    <label class="ml-2 block text-sm text-gray-300" for="potfile_disable">
                         Disable potfile (--potfile-disable)
                     </label>
                 </div>
                 
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary">Create WPA Cracking Task</button>
+                <div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded shadow-md transition-all duration-300">Create WPA Cracking Task</button>
                 </div>
             </form>
         </div>
@@ -104,9 +106,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // You can add any JavaScript for form validation or dynamic behavior here
-    });
-</script>
+<script src="/static/js/task-form.js"></script>
 {% endblock %}

@@ -3,17 +3,19 @@
 {% block title %}Task Details - Distributed Hashcat Cracking{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-file-earmark-text"></i> Task Details</h1>
-        <div>
-            <a href="/tasks" class="btn btn-secondary me-2">
-                <i class="bi bi-arrow-left"></i> Back to Tasks
+<div class="py-4">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 class="text-2xl font-bold text-gray-200 flex items-center">
+            <i class="fa-solid fa-file-alt mr-2 text-blue-400"></i> Task Details
+        </h1>
+        <div class="flex space-x-2">
+            <a href="/tasks" class="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-all duration-200 shadow-md flex items-center">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Back to Tasks
             </a>
             {% if task.status == "pending" or task.status == "running" %}
-            <form action="/tasks/{{ task.id }}/cancel" method="post" class="d-inline">
-                <button type="submit" class="btn btn-warning">
-                    <i class="bi bi-pause-fill"></i> Cancel Task
+            <form action="/tasks/{{ task.id }}/cancel" method="post" class="inline">
+                <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-500 transition-all duration-200 shadow-md flex items-center">
+                    <i class="fa-solid fa-pause mr-2"></i> Cancel Task
                 </button>
             </form>
             {% endif %}
@@ -21,85 +23,88 @@
     </div>
     
     <!-- Task Overview -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">{{ task.name }}</h5>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="md:col-span-3">
+            <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6 border border-gray-700">
+                <div class="bg-blue-500 text-white px-4 py-3">
+                    <h5 class="font-semibold">{{ task.name }}</h5>
                 </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <p class="mb-1"><strong>Status:</strong>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Status:</span>
                                 {% if task.status == "pending" %}
-                                <span class="badge bg-secondary">Pending</span>
+                                <span class="bg-gray-700 text-gray-300 text-xs font-medium px-2.5 py-1 rounded-md border border-gray-600">Pending</span>
                                 {% elif task.status == "running" %}
-                                <span class="badge bg-primary">Running</span>
+                                <span class="bg-gray-900 text-blue-400 text-xs font-medium px-2.5 py-1 rounded-md border border-blue-500">Running</span>
                                 {% elif task.status == "completed" %}
-                                <span class="badge bg-success">Completed</span>
+                                <span class="bg-gray-900 text-green-400 text-xs font-medium px-2.5 py-1 rounded-md border border-green-500">Completed</span>
                                 {% elif task.status == "failed" %}
-                                <span class="badge bg-danger">Failed</span>
+                                <span class="bg-gray-900 text-red-400 text-xs font-medium px-2.5 py-1 rounded-md border border-red-500">Failed</span>
                                 {% elif task.status == "cancelled" %}
-                                <span class="badge bg-warning text-dark">Cancelled</span>
+                                <span class="bg-gray-900 text-yellow-400 text-xs font-medium px-2.5 py-1 rounded-md border border-yellow-500">Cancelled</span>
                                 {% endif %}
                             </p>
-                            <p class="mb-1"><strong>Hash Type:</strong> {{ task.hash_type }}</p>
-                            <p class="mb-1"><strong>Hash Type ID:</strong> {{ task.hash_type_id or 'Not specified' }}</p>
-                            <p class="mb-1"><strong>Attack Mode:</strong> {{ task.attack_mode }}</p>
-                            <p class="mb-1"><strong>Priority:</strong> {{ task.priority }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Hash Type:</span> {{ task.hash_type }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Hash Type ID:</span> {{ task.hash_type_id or 'Not specified' }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Attack Mode:</span> {{ task.attack_mode }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Priority:</span> {{ task.priority }}</p>
                         </div>
-                        <div class="col-md-6">
-                            <p class="mb-1"><strong>Created:</strong> {{ task.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        <div>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Created:</span> {{ task.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
                             {% if task.started_at %}
-                            <p class="mb-1"><strong>Started:</strong> {{ task.started_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Started:</span> {{ task.started_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
                             {% endif %}
                             {% if task.completed_at %}
-                            <p class="mb-1"><strong>Completed:</strong> {{ task.completed_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Completed:</span> {{ task.completed_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
                             {% endif %}
                             {% if task.agent_id %}
-                            <p class="mb-1"><strong>Agent:</strong> <a href="/agents/{{ task.agent_id }}">View Agent</a></p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Agent:</span> <a href="/agents/{{ task.agent_id }}" class="text-blue-400 hover:text-blue-300 hover:underline">View Agent</a></p>
                             {% endif %}
                         </div>
                     </div>
                     
                     {% if task.description %}
-                    <div class="mb-3">
-                        <h6>Description:</h6>
-                        <p>{{ task.description }}</p>
+                    <div class="mb-4">
+                        <h6 class="font-semibold text-blue-400 mb-2">Description:</h6>
+                        <p class="text-sm text-gray-300">{{ task.description }}</p>
                     </div>
                     {% endif %}
                     
-                    <div class="mb-3">
-                        <h6>Progress:</h6>
-                        <div class="progress mb-2">
-                            <div class="progress-bar" role="progressbar" style="width: /*{{ task.progress * 100 }}*/50%" 
-                                 aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
-                                {{ (task.progress * 100) | round(1) }}%
-                            </div>
+                    <div class="mb-4">
+                        <h6 class="font-semibold text-blue-400 mb-2">Progress:</h6>
+                        {% set progress_percent = (task.progress * 100) | round(1) %}
+                        <!-- Progress bar container with pure Tailwind CSS classes -->
+                        <div class="w-full bg-gray-700 rounded-full h-2.5 mb-3 overflow-hidden relative border border-gray-600">
+                            <!-- No Jinja2 in attributes, width will be set by JavaScript -->
+                            <div class="h-2.5 bg-blue-600 rounded-full absolute top-0 left-0 w-0"></div>
                         </div>
+                        <!-- Store progress data in a separate element with no attributes containing Jinja2 -->
+                        <div class="hidden progress-data">{{ progress_percent }}</div>
+                        <div class="text-xs text-gray-400 mb-2">{{ (task.progress * 100) | round(1) }}%</div>
                         {% if task.speed %}
-                        <p class="mb-1"><strong>Speed:</strong> {{ task.speed }}</p>
+                        <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Speed:</span> {{ task.speed }}</p>
                         {% endif %}
                     </div>
                     
                     {% if task.error %}
-                    <div class="alert alert-danger">
-                        <h6>Error:</h6>
-                        <p>{{ task.error }}</p>
+                    <div class="bg-gray-900 border-l-4 border-red-500 text-red-400 p-4 rounded border border-gray-700">
+                        <h6 class="font-semibold text-red-400 mb-2">Error:</h6>
+                        <p class="text-sm">{{ task.error }}</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
             
             <!-- Attack Configuration -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">Attack Configuration</h5>
+            <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6 border border-gray-700">
+                <div class="bg-gray-900 px-4 py-3 border-b border-gray-700">
+                    <h5 class="font-semibold text-gray-200">Attack Configuration</h5>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p class="mb-1"><strong>Attack Mode:</strong> 
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Attack Mode:</span> 
                                 {% if task.attack_mode == 0 %}
                                 Dictionary Attack (0)
                                 {% elif task.attack_mode == 1 %}
@@ -115,18 +120,18 @@
                                 {% endif %}
                             </p>
                             {% if task.wordlist_path %}
-                            <p class="mb-1"><strong>Wordlist:</strong> {{ task.wordlist_path }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Wordlist:</span> {{ task.wordlist_path }}</p>
                             {% endif %}
                             {% if task.rule_path %}
-                            <p class="mb-1"><strong>Rule:</strong> {{ task.rule_path }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Rule:</span> {{ task.rule_path }}</p>
                             {% endif %}
                             {% if task.mask %}
-                            <p class="mb-1"><strong>Mask:</strong> {{ task.mask }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Mask:</span> {{ task.mask }}</p>
                             {% endif %}
                         </div>
-                        <div class="col-md-6">
+                        <div>
                             {% if task.additional_args %}
-                            <p class="mb-1"><strong>Additional Args:</strong> {{ task.additional_args }}</p>
+                            <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Additional Args:</span> {{ task.additional_args }}</p>
                             {% endif %}
                         </div>
                     </div>
@@ -134,32 +139,34 @@
             </div>
         </div>
         
-        <div class="col-md-4">
+        <div class="md:col-span-1">
             <!-- Hashes -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">Hashes</h5>
+            <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6 border border-gray-700">
+                <div class="bg-gray-900 px-4 py-3 border-b border-gray-700">
+                    <h5 class="font-semibold text-gray-200">Hashes</h5>
                 </div>
-                <div class="card-body">
-                    <p><strong>Total:</strong> {{ task.hashes|length }}</p>
-                    <p><strong>Recovered:</strong> {{ task.recovered_hashes|length }}</p>
+                <div class="p-4">
+                    <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Total:</span> {{ task.hashes|length }}</p>
+                    <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Recovered:</span> {{ task.recovered_hashes|length }}</p>
                     
-                    <div class="progress mb-3">
+                    <div class="w-full bg-gray-700 rounded-full h-2.5 mb-3 relative border border-gray-600">
                         {% set recovery_percentage = (task.recovered_hashes|length / task.hashes|length * 100) if task.hashes|length > 0 else 0 %}
-                        <div class="progress-bar bg-success" role="progressbar" style="width: /*{{ recovery_percentage }}*/50%">
-                            {{ recovery_percentage|round(1) }}%
-                        </div>
+                        <!-- No inline style with Jinja2, width will be set by JavaScript -->
+                        <div class="bg-green-600 h-2.5 rounded-full absolute top-0 left-0 w-0 recovery-progress-bar"></div>
                     </div>
+                    <!-- Store recovery percentage in a separate element with no attributes containing Jinja2 -->
+                    <div class="hidden recovery-data">{{ recovery_percentage|round(1) }}</div>
+                    <div class="text-xs text-gray-400 mb-3">{{ recovery_percentage|round(1) }}%</div>
                     
                     <div class="mb-3">
-                        <h6>Sample Hashes:</h6>
-                        <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
-                            <ul class="list-unstyled mb-0">
+                        <h6 class="font-semibold text-blue-400 mb-2">Sample Hashes:</h6>
+                        <div class="border border-gray-700 bg-gray-900 rounded p-2 max-h-[150px] overflow-y-auto">
+                            <ul class="list-none m-0 p-0">
                                 {% for hash in task.hashes[:5] %}
-                                <li class="text-monospace">{{ hash }}</li>
+                                <li class="font-mono text-xs mb-1 text-gray-300">{{ hash }}</li>
                                 {% endfor %}
                                 {% if task.hashes|length > 5 %}
-                                <li>...</li>
+                                <li class="text-xs text-gray-500">...</li>
                                 {% endif %}
                             </ul>
                         </div>
@@ -168,42 +175,45 @@
             </div>
             
             <!-- Results -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="card-title mb-0">Results</h5>
+            <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-700">
+                <div class="bg-green-600 text-white px-4 py-3">
+                    <h5 class="font-semibold">Results</h5>
                 </div>
-                <div class="card-body">
+                <div class="p-4">
                     {% if results %}
-                    <p><strong>Cracked Passwords:</strong> {{ results|length }}</p>
-                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                        <table class="table table-sm table-hover">
-                            <thead>
+                    <p class="mb-3 text-sm"><span class="font-semibold text-blue-400">Cracked Passwords:</span> {{ results|length }}</p>
+                    <div class="overflow-x-auto max-h-[300px] overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead class="bg-gray-900">
                                 <tr>
-                                    <th>Hash</th>
-                                    <th>Password</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Hash</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Password</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="bg-gray-800 divide-y divide-gray-700">
                                 {% for result in results %}
-                                <tr>
-                                    <td class="text-truncate" style="max-width: 150px;" title="{{ result.hash_value }}">
+                                <tr class="hover:bg-gray-700">
+                                    <td class="px-3 py-2 text-xs truncate max-w-[150px] text-gray-300" title="{{ result.hash_value }}">
                                         {{ result.hash_value[:10] }}...
                                     </td>
-                                    <td>{{ result.plaintext }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-300">{{ result.plaintext }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                     {% else %}
-                    <p>No cracked passwords yet.</p>
+                    <p class="text-sm text-gray-400">No cracked passwords yet.</p>
                     {% endif %}
                 </div>
-                <div class="card-footer">
-                    <a href="/results?task_id={{ task.id }}" class="btn btn-sm btn-success">View All Results</a>
+                <div class="px-4 py-3 bg-gray-900 border-t border-gray-700">
+                    <!-- Store task ID in data attribute and use JavaScript to construct the URL -->
+                    <a href="#" data-task-id="{{ task.id }}" class="results-link bg-green-500 hover:bg-green-600 text-white text-xs font-medium py-1.5 px-3 rounded transition-all duration-200 shadow-md">View All Results</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}{% endblock %}

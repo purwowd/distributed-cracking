@@ -1,8 +1,22 @@
 import asyncio
 import logging
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Header, Query
+import traceback
+from datetime import datetime, timedelta
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Header, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
+from typing import List, Optional, Dict, Any
+
+from model.pagination import PaginationParams, PaginatedResponse
+from config.auth import User, Token, get_current_active_user, admin_required, create_access_token, verify_password
+from config.api_docs import API_DESCRIPTION, TAGS_METADATA
+from model.examples import TASK_EXAMPLES, AGENT_EXAMPLES, TASK_STATUS_EXAMPLES, HEARTBEAT_EXAMPLES
+from model.recovered_hash import RecoveredHashCreate
+
+from config.logging_config import get_server_logger, log_with_context
 
 from config.database import Database
 from config.settings import SERVER_HOST, SERVER_PORT
@@ -23,19 +37,49 @@ from model.task import TaskCreate, TaskResponse, TaskUpdate, TaskStatusUpdate
 from model.agent import AgentCreate, AgentResponse, AgentUpdate, AgentHeartbeat
 from model.result import ResultCreate, ResultResponse
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
+# Get configured logger
+logger = get_server_logger()
 
 # Create FastAPI app
 app = FastAPI(
     title="Distributed Hashcat Cracking System",
-    description="API for distributed password cracking using Hashcat",
+    description=API_DESCRIPTION,
     version="1.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+    openapi_tags=TAGS_METADATA
 )
+
+# Add exception handler for better error logging
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler with detailed logging"""
+    error_id = f"{id(exc)}"
+    error_msg = str(exc)
+    error_type = type(exc).__name__
+    
+    # Log detailed error information
+    log_with_context(
+        logger, 
+        logging.ERROR, 
+        f"Unhandled exception: {error_type}: {error_msg}",
+        error_id=error_id,
+        error_type=error_type,
+        path=request.url.path,
+        method=request.method,
+        client=request.client.host if request.client else "unknown",
+        traceback=traceback.format_exc()
+    )
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal server error",
+            "error_id": error_id,
+            "type": error_type
+        }
+    )
 
 # Add CORS middleware
 app.add_middleware(
@@ -45,6 +89,50 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Authentication endpoints
+@app.post("/token", response_model=Token, tags=["Authentication"])
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    """
+    Authenticate user and get JWT access token.
+    
+    - **username**: User's username
+    - **password**: User's password
+    - Returns an access token and token type for authentication
+    
+    Use this token in the Authorization header for subsequent requests.
+    Format: 'Bearer {token}'
+    """
+    # In a real application, you would validate against database
+    # For now, we'll use a hardcoded user for demonstration
+    if form_data.username != "admin" or not verify_password(form_data.password, "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=30)
+    access_token = create_access_token(
+        data={"sub": form_data.username, "role": "admin"},
+        expires_delta=access_token_expires
+    )
+    
+    log_with_context(
+        logger,
+        logging.INFO,
+        f"User {form_data.username} logged in",
+        username=form_data.username
+    )
+    
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.get("/users/me", response_model=User, tags=["Authentication"])
+async def read_users_me(current_user: User = Depends(get_current_active_user)):
+    """Get current user information"""
+    return current_user
 
 # Dependency to get database connection
 async def get_db():
@@ -96,9 +184,22 @@ async def check_offline_agents(agent_usecase: AgentUseCase):
         try:
             offline_count = await agent_usecase.check_offline_agents()
             if offline_count > 0:
-                logger.info(f"Marked {offline_count} agents as offline")
+                log_with_context(
+                    logger, 
+                    logging.INFO, 
+                    f"Marked {offline_count} agents as offline",
+                    offline_count=offline_count,
+                    task="check_offline_agents"
+                )
         except Exception as e:
-            logger.error(f"Error checking offline agents: {e}")
+            log_with_context(
+                logger, 
+                logging.ERROR, 
+                f"Error checking offline agents: {str(e)}",
+                error_type=type(e).__name__,
+                task="check_offline_agents",
+                traceback=traceback.format_exc()
+            )
         
         # Sleep for 1 minute
         await asyncio.sleep(60)
@@ -109,9 +210,22 @@ async def auto_assign_tasks(task_usecase: TaskUseCase):
         try:
             assigned_count = await task_usecase.auto_assign_tasks()
             if assigned_count > 0:
-                logger.info(f"Auto-assigned {assigned_count} tasks to agents")
+                log_with_context(
+                    logger, 
+                    logging.INFO, 
+                    f"Auto-assigned {assigned_count} tasks to agents",
+                    assigned_count=assigned_count,
+                    task="auto_assign_tasks"
+                )
         except Exception as e:
-            logger.error(f"Error auto-assigning tasks: {e}")
+            log_with_context(
+                logger, 
+                logging.ERROR, 
+                f"Error auto-assigning tasks: {str(e)}",
+                error_type=type(e).__name__,
+                task="auto_assign_tasks",
+                traceback=traceback.format_exc()
+            )
         
         # Sleep for 10 seconds
         await asyncio.sleep(10)
@@ -137,22 +251,47 @@ async def startup_event():
     asyncio.create_task(check_offline_agents(agent_usecase))
     asyncio.create_task(auto_assign_tasks(task_usecase))
     
-    logger.info("Server started")
+    log_with_context(
+        logger, 
+        logging.INFO, 
+        "Server started",
+        version="1.0.0",
+        host=SERVER_HOST,
+        port=SERVER_PORT
+    )
 
 @app.on_event("shutdown")
 async def shutdown_event():
     # Close database connection
     await Database.close()
-    logger.info("Server shutdown")
-
+    log_with_context(
+        logger, 
+        logging.INFO, 
+        "Server shutdown",
+        host=SERVER_HOST,
+        port=SERVER_PORT
+    )
 
 # Task endpoints
 @app.post("/tasks", response_model=TaskResponse, tags=["Tasks"])
 async def create_task(
     task_create: TaskCreate,
     task_usecase=Depends(get_task_usecase),
+    current_user: User = Depends(get_current_active_user),
 ):
-    """Create a new task"""
+    """
+    Create a new password cracking task.
+    
+    - **task_create**: Task details including name, attack mode, hash type, etc.
+    - Returns the created task with its assigned ID.
+    
+    Attack modes:
+    - 0: Dictionary attack
+    - 1: Combination attack
+    - 3: Mask attack
+    - 6: Hybrid dictionary + mask
+    - 7: Hybrid mask + dictionary
+    """
     task = Task(
         name=task_create.name,
         description=task_create.description,
@@ -171,31 +310,63 @@ async def create_task(
     created_task = await task_usecase.create_task(task)
     return TaskResponse(**created_task.to_dict())
 
-@app.get("/tasks", response_model=List[TaskResponse], tags=["Tasks"])
+@app.get("/tasks", response_model=PaginatedResponse[TaskResponse], tags=["Tasks"])
 async def get_tasks(
-    skip: int = 0,
-    limit: int = 100,
+    pagination: PaginationParams = Depends(),
     status: Optional[str] = None,
     task_usecase=Depends(get_task_usecase),
 ):
-    """Get all tasks with optional filtering"""
-    if status:
-        try:
-            task_status = TaskStatus(status)
-            tasks = await task_usecase.get_tasks_by_status(task_status, skip, limit)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
-    else:
-        tasks = await task_usecase.get_all_tasks(skip, limit)
+    """
+    Get all tasks with optional filtering and pagination.
     
-    return [TaskResponse(**task.to_dict()) for task in tasks]
+    - **pagination**: Skip and limit parameters for pagination
+    - **status**: Optional filter by task status (PENDING, ASSIGNED, RUNNING, COMPLETED, FAILED, CANCELLED)
+    - Returns a paginated list of tasks with total count and pagination metadata
+    """
+    try:
+        # Get total count first
+        if status:
+            try:
+                task_status = TaskStatus(status)
+                total = await task_usecase.count_tasks_by_status(task_status)
+                tasks = await task_usecase.get_tasks_by_status(task_status, pagination.skip, pagination.limit)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
+        else:
+            total = await task_usecase.count_all_tasks()
+            tasks = await task_usecase.get_all_tasks(pagination.skip, pagination.limit)
+        
+        # Convert tasks to response models
+        task_responses = [TaskResponse(**task.to_dict()) for task in tasks]
+        
+        # Create paginated response
+        return PaginatedResponse.create(
+            items=task_responses,
+            total=total,
+            skip=pagination.skip,
+            limit=pagination.limit
+        )
+    except Exception as e:
+        log_with_context(
+            logger,
+            logging.ERROR,
+            f"Error retrieving tasks: {str(e)}",
+            error_type=type(e).__name__,
+            traceback=traceback.format_exc()
+        )
+        raise
 
 @app.get("/tasks/{task_id}", response_model=TaskResponse, tags=["Tasks"])
 async def get_task(
     task_id: str,
     task_usecase=Depends(get_task_usecase),
 ):
-    """Get a task by ID"""
+    """
+    Get a specific task by ID.
+    
+    - **task_id**: The unique identifier of the task
+    - Returns the task details including status, progress, and recovered hashes
+    """
     task = await task_usecase.get_task(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -232,38 +403,150 @@ async def update_task(
     updated_task = await task_usecase.update_task(task)
     return TaskResponse(**updated_task.to_dict())
 
-@app.delete("/tasks/{task_id}", tags=["Tasks"])
+@app.delete("/tasks/{task_id}", response_model=bool, tags=["Tasks"])
 async def delete_task(
     task_id: str,
     task_usecase=Depends(get_task_usecase),
+    current_user: User = Depends(admin_required),
 ):
-    """Delete a task"""
+    """
+    Delete a task by ID.
+    
+    - **task_id**: The unique identifier of the task to delete
+    - Returns true if the task was successfully deleted
+    
+    This endpoint is restricted to admin users only.
+    Running tasks cannot be deleted - they must be cancelled first.
+    """
     deleted = await task_usecase.delete_task(task_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    return {"message": "Task deleted"}
+    return deleted
 
 @app.post("/tasks/{task_id}/cancel", response_model=TaskResponse, tags=["Tasks"])
 async def cancel_task(
     task_id: str,
     task_usecase=Depends(get_task_usecase),
+    current_user: User = Depends(get_current_active_user),
 ):
-    """Cancel a task"""
+    """
+    Cancel a running or assigned task.
+    
+    - **task_id**: The unique identifier of the task to cancel
+    - Returns the updated task with CANCELLED status
+    
+    This will stop the task if it's running and free up the assigned agent.
+    """
     task = await task_usecase.cancel_task(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
     return TaskResponse(**task.to_dict())
 
+@app.post("/tasks/{task_id}/recovered", response_model=TaskResponse, tags=["Tasks"])
+async def add_recovered_hash(
+    task_id: str,
+    recovered_hash: RecoveredHashCreate,
+    api_key: str = Header(...),
+    task_usecase=Depends(get_task_usecase),
+    agent_usecase=Depends(get_agent_usecase),
+):
+    """
+    Add a recovered hash to a task (agent endpoint).
+    
+    - **task_id**: The unique identifier of the task
+    - **recovered_hash**: Details of the recovered hash including hash value and plaintext
+    - **api_key**: Agent API key for authentication
+    - Returns the updated task with the new recovered hash added
+    
+    This endpoint is used by agent nodes to report successfully cracked passwords.
+    """
+    # Verify agent is assigned to this task
+    if agent.current_task_id != task_id:
+        raise HTTPException(status_code=403, detail="Agent not assigned to this task")
+    
+    # Add recovered hash
+    task = await task_usecase.add_recovered_hash(task_id, recovered_hash.hash, recovered_hash.plaintext, agent.id)
+    
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    return TaskResponse(**task.to_dict())
+
+@app.post("/tasks/{task_id}/assign/{agent_id}", response_model=TaskResponse, tags=["Tasks"])
+async def assign_task(
+    task_id: str,
+    agent_id: str,
+    task_usecase=Depends(get_task_usecase),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Manually assign a task to a specific agent.
+    
+    - **task_id**: The unique identifier of the task to assign
+    - **agent_id**: The unique identifier of the agent to assign the task to
+    - Returns the updated task with assignment details
+    
+    The task must be in PENDING status and the agent must be available.
+    """
+    task = await task_usecase.assign_task(task_id, agent_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    return TaskResponse(**task.to_dict())
+
+@app.post("/tasks/{task_id}/status", response_model=TaskResponse, tags=["Tasks"])
+async def update_task_status(
+    task_id: str,
+    status_update: TaskStatusUpdate,
+    api_key: str = Header(...),
+    task_usecase=Depends(get_task_usecase),
+    agent_usecase=Depends(get_agent_usecase),
+):
+    """
+    Update task status (agent endpoint).
+    
+    - **task_id**: The unique identifier of the task to update
+    - **status_update**: New status details including status, progress, speed, and error message
+    - **api_key**: Agent API key for authentication
+    - Returns the updated task with new status information
+    
+    This endpoint is primarily used by agent nodes to report task progress and status changes.
+    """
+    # Verify agent is assigned to this task
+    if agent.current_task_id != task_id:
+        raise HTTPException(status_code=403, detail="Agent not assigned to this task")
+    
+    # Update task status
+    task = await task_usecase.update_task_status(
+        task_id,
+        status_update.status,
+        status_update.progress,
+        status_update.speed,
+        status_update.error,
+    )
+    
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    return TaskResponse(**task.to_dict())
 
 # Agent endpoints
 @app.post("/agents", response_model=AgentResponse, tags=["Agents"])
 async def register_agent(
     agent_create: AgentCreate,
     agent_usecase=Depends(get_agent_usecase),
+    current_user: User = Depends(admin_required),
 ):
-    """Register a new agent"""
+    """
+    Register a new agent node.
+    
+    - **agent_create**: Agent details including name, hostname, API key, and device information
+    - Returns the registered agent with its assigned ID
+    
+    This endpoint is restricted to admin users only.
+    """
     agent = Agent(
         name=agent_create.name,
         hostname=agent_create.hostname,
@@ -279,24 +562,52 @@ async def register_agent(
     registered_agent = await agent_usecase.register_agent(agent)
     return AgentResponse(**registered_agent.to_dict())
 
-@app.get("/agents", response_model=List[AgentResponse], tags=["Agents"])
+@app.get("/agents", response_model=PaginatedResponse[AgentResponse], tags=["Agents"])
 async def get_agents(
-    skip: int = 0,
-    limit: int = 100,
+    pagination: PaginationParams = Depends(),
     status: Optional[str] = None,
     agent_usecase=Depends(get_agent_usecase),
+    current_user: User = Depends(get_current_active_user),
 ):
-    """Get all agents with optional filtering"""
-    if status:
-        try:
-            agent_status = AgentStatus(status)
-            agents = await agent_usecase.get_agents_by_status(agent_status, skip, limit)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
-    else:
-        agents = await agent_usecase.get_all_agents(skip, limit)
+    """
+    Get all agents with optional filtering and pagination.
     
-    return [AgentResponse(**agent.to_dict()) for agent in agents]
+    - **pagination**: Skip and limit parameters for pagination
+    - **status**: Optional filter by agent status (ONLINE, OFFLINE, BUSY)
+    - Returns a paginated list of agents with total count and pagination metadata
+    """
+    try:
+        # Get total count first
+        if status:
+            try:
+                agent_status = AgentStatus(status)
+                total = await agent_usecase.count_agents_by_status(agent_status)
+                agents = await agent_usecase.get_agents_by_status(agent_status, pagination.skip, pagination.limit)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
+        else:
+            total = await agent_usecase.count_all_agents()
+            agents = await agent_usecase.get_all_agents(pagination.skip, pagination.limit)
+        
+        # Convert agents to response models
+        agent_responses = [AgentResponse(**agent.to_dict()) for agent in agents]
+        
+        # Create paginated response
+        return PaginatedResponse.create(
+            items=agent_responses,
+            total=total,
+            skip=pagination.skip,
+            limit=pagination.limit
+        )
+    except Exception as e:
+        log_with_context(
+            logger,
+            logging.ERROR,
+            f"Error retrieving agents: {str(e)}",
+            error_type=type(e).__name__,
+            traceback=traceback.format_exc()
+        )
+        raise
 
 @app.get("/agents/{agent_id}", response_model=AgentResponse, tags=["Agents"])
 async def get_agent(
@@ -366,17 +677,23 @@ async def agent_heartbeat(
     agent=Depends(verify_agent_api_key),
     agent_usecase=Depends(get_agent_usecase),
 ):
-    """Send agent heartbeat"""
-    updated_agent = await agent_usecase.process_heartbeat(
+    """
+    Update agent heartbeat status.
+    
+    - **heartbeat**: Heartbeat information including status, CPU/GPU usage, and memory usage
+    - Returns the updated agent information
+    
+    This endpoint is used by agent nodes to periodically report their status and resource usage.
+    """
+    updated_agent = await agent_usecase.update_heartbeat(
         agent.id,
         heartbeat.status,
-        heartbeat.current_task_id,
-        heartbeat.task_progress,
-        heartbeat.task_speed,
+        heartbeat.cpu_usage,
+        heartbeat.gpu_usage,
+        heartbeat.memory_usage
     )
     
     return AgentResponse(**updated_agent.to_dict())
-
 
 # Agent API endpoints (for agent-server communication)
 @app.get("/agent/task", tags=["Agent API"])
@@ -384,7 +701,13 @@ async def get_agent_task(
     agent=Depends(verify_agent_api_key),
     task_usecase=Depends(get_task_usecase),
 ):
-    """Get current task for agent"""
+    """
+    Get the current task assigned to an agent.
+    
+    - Returns the task details if a task is assigned, or null if no task is assigned
+    
+    This endpoint is used by agent nodes to check for assigned tasks.
+    """
     if not agent.current_task_id:
         return {"status": "no_task"}
     
@@ -431,27 +754,64 @@ async def update_task_status(
 
 
 # Result endpoints
-@app.get("/results", response_model=List[ResultResponse], tags=["Results"])
+@app.get("/results", response_model=PaginatedResponse[ResultResponse], tags=["Results"])
 async def get_results(
-    skip: int = 0,
-    limit: int = 100,
+    pagination: PaginationParams = Depends(),
     task_id: Optional[str] = None,
     result_usecase=Depends(get_result_usecase),
+    current_user: User = Depends(get_current_active_user),
 ):
-    """Get all results with optional filtering"""
-    if task_id:
-        results = await result_usecase.get_results_by_task_id(task_id)
-    else:
-        results = await result_usecase.get_all_results(skip, limit)
+    """
+    Get all cracking results with optional filtering and pagination.
     
-    return [ResultResponse(**result.to_dict()) for result in results]
+    - **pagination**: Skip and limit parameters for pagination
+    - **task_id**: Optional filter to get results for a specific task only
+    - Returns a paginated list of results with total count and pagination metadata
+    
+    Each result represents a successfully cracked password, including the hash value,
+    plaintext password, and which agent cracked it.
+    """
+    try:
+        # Get total count first
+        if task_id:
+            total = await result_usecase.count_results_by_task(task_id)
+            results = await result_usecase.get_results_by_task(task_id, pagination.skip, pagination.limit)
+        else:
+            total = await result_usecase.count_all_results()
+            results = await result_usecase.get_all_results(pagination.skip, pagination.limit)
+        
+        # Convert results to response models
+        result_responses = [ResultResponse(**result.to_dict()) for result in results]
+        
+        # Create paginated response
+        return PaginatedResponse.create(
+            items=result_responses,
+            total=total,
+            skip=pagination.skip,
+            limit=pagination.limit
+        )
+    except Exception as e:
+        log_with_context(
+            logger,
+            logging.ERROR,
+            f"Error retrieving results: {str(e)}",
+            error_type=type(e).__name__,
+            traceback=traceback.format_exc()
+        )
+        raise
 
 @app.get("/results/{result_id}", response_model=ResultResponse, tags=["Results"])
 async def get_result(
     result_id: str,
     result_usecase=Depends(get_result_usecase),
+    current_user: User = Depends(get_current_active_user),
 ):
-    """Get a result by ID"""
+    """
+    Get a specific cracking result by ID.
+    
+    - **result_id**: The unique identifier of the result
+    - Returns the result details including the hash value, plaintext, and which agent cracked it
+    """
     result = await result_usecase.get_result(result_id)
     if not result:
         raise HTTPException(status_code=404, detail="Result not found")

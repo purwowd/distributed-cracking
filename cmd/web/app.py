@@ -1,18 +1,28 @@
 #!/usr/bin/env python
 import os
 import uvicorn
-import datetime
 import shutil
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+from datetime import datetime, timedelta
 
-from fastapi import FastAPI, Request, Depends, HTTPException, Form, File, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request, Depends, HTTPException, Form, File, UploadFile, Cookie, status
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+import random
+import logging
+from fastapi_utils.tasks import repeat_every
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Import the new dependencies module
-from config.dependencies import get_task_usecase, get_agent_usecase, get_result_usecase
+from config.dependencies import get_task_usecase, get_agent_usecase, get_result_usecase, get_performance_usecase, get_user_usecase
+from entity.user import User, UserRole
+from usecase.user_usecase import UserUseCase
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
@@ -40,6 +50,22 @@ from model.agent import AgentCreate
 # Create FastAPI app
 app = FastAPI(title="Distributed Hashcat Cracking - Web Dashboard")
 
+# Add middleware to handle authentication redirects
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        # Check if response status code is 401 Unauthorized
+        if response.status_code == status.HTTP_401_UNAUTHORIZED:
+            return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+        return response
+    except Exception as exc:
+        # For any other exceptions, just raise them
+        raise
+
+# OAuth2 password bearer for token authentication
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 # Setup CORS
 app.add_middleware(
     CORSMiddleware,
@@ -55,20 +81,96 @@ app.mount("/static", StaticFiles(directory="cmd/web/static"), name="static")
 # Setup templates
 templates = Jinja2Templates(directory="cmd/web/templates")
 
-
+# Initialize database connection
 @app.on_event("startup")
 async def startup_db_client():
     await connect_to_db()
+    
+    # Initialize user repository and create admin user if needed
+    try:
+        user_usecase = await get_user_usecase()
+        await user_usecase.initialize_admin_user()
+    except Exception as e:
+        logging.error(f"Error initializing user system: {str(e)}")
 
 
+# Close database connection
 @app.on_event("shutdown")
 async def shutdown_db_client():
     await close_db_connection()
 
 
+# Authentication dependency
+async def get_current_user(session_token: str = Cookie(None), user_usecase: UserUseCase = Depends(get_user_usecase)):
+    if not session_token:
+        return None
+    
+    try:
+        payload = user_usecase.verify_token(session_token)
+        username = payload.get("sub")
+        if not username:
+            return None
+        
+        user = await user_usecase.get_user_by_username(username)
+        return user
+    except Exception:
+        return None
+
+
+async def get_current_active_user(current_user: User = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return current_user
+
+
+# Login routes
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request, current_user: User = Depends(get_current_user)):
+    # If user is already logged in, redirect to dashboard
+    if current_user:
+        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.post("/login", response_class=HTMLResponse)
+async def login(request: Request, username: str = Form(...), password: str = Form(...), user_usecase: UserUseCase = Depends(get_user_usecase)):
+    user = await user_usecase.authenticate_user(username, password)
+    if not user:
+        return templates.TemplateResponse(
+            "login.html", 
+            {"request": request, "error": "Invalid username or password"}
+        )
+    
+    # Create access token
+    access_token = user_usecase.create_access_token(
+        data={"sub": user.username, "role": user.role.value if isinstance(user.role, UserRole) else user.role}
+    )
+    
+    # Create response with cookie
+    response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    response.set_cookie(key="session_token", value=access_token, httponly=True)
+    
+    return response
+
+
+@app.get("/logout")
+async def logout():
+    response = RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    response.delete_cookie(key="session_token")
+    return response
+
+
 # Dashboard routes
 @app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request, task_usecase: TaskUseCase = Depends(get_task_usecase),
+async def dashboard(request: Request, 
+                   current_user: User = Depends(get_current_active_user),
+                   task_usecase: TaskUseCase = Depends(get_task_usecase),
                    agent_usecase: AgentUseCase = Depends(get_agent_usecase),
                    result_usecase: ResultUseCase = Depends(get_result_usecase)):
     """Main dashboard page"""
@@ -95,7 +197,7 @@ async def dashboard(request: Request, task_usecase: TaskUseCase = Depends(get_ta
     }
     
     # Get recent tasks
-    recent_tasks = sorted(tasks, key=lambda t: getattr(t, 'created_at', t.get('created_at', datetime.datetime.now())), reverse=True)[:5]
+    recent_tasks = sorted(tasks, key=lambda t: getattr(t, 'created_at', t.get('created_at', datetime.now())), reverse=True)[:5]
     
     return templates.TemplateResponse(
         "dashboard.html",
@@ -105,7 +207,8 @@ async def dashboard(request: Request, task_usecase: TaskUseCase = Depends(get_ta
             "agent_stats": agent_stats,
             "recent_tasks": recent_tasks,
             "recent_results": results,
-            "active_page": "dashboard"
+            "active_page": "dashboard",
+            "user": current_user
         }
     )
 
@@ -117,7 +220,8 @@ async def list_tasks(
     status: Optional[str] = None,
     hash_type: Optional[str] = None,
     sort: str = "created_at",
-    task_usecase: TaskUseCase = Depends(get_task_usecase)
+    task_usecase: TaskUseCase = Depends(get_task_usecase),
+    current_user: User = Depends(get_current_active_user)
 ):
     """List all tasks with optional filtering"""
     # Get tasks with status filter if provided
@@ -139,40 +243,43 @@ async def list_tasks(
     return templates.TemplateResponse(
         "tasks.html",
         {"request": request, "tasks": tasks, "active_page": "tasks", 
-         "current_status": status, "current_hash_type": hash_type, "current_sort": sort}
+         "current_status": status, "current_hash_type": hash_type, "current_sort": sort,
+         "user": current_user}
     )
 
 
 @app.get("/tasks/new", response_class=HTMLResponse)
-async def new_task_form(request: Request):
+async def new_task_form(request: Request, current_user: User = Depends(get_current_active_user)):
     """Form to create a new task"""
+    
     hash_types = ["md5", "sha1", "sha256", "ntlm", "wpa"]
     return templates.TemplateResponse(
         "task_new.html",
-        {"request": request, "hash_types": hash_types, "active_page": "tasks"}
+        {"request": request, "hash_types": hash_types, "active_page": "tasks", "user": current_user}
     )
 
 
 @app.get("/tasks/new-wpa", response_class=HTMLResponse)
-async def new_wpa_task_form(request: Request):
+async def new_wpa_task_form(request: Request, current_user: User = Depends(get_current_active_user)):
     """Form to create a new WPA cracking task"""
-    # Get query parameters for pre-filling form
-    handshake_file = request.query_params.get("file", "")
-    wordlist = request.query_params.get("wordlist", "rockyou.txt")
+    
+    # Get list of capture files in the captures directory
+    captures_dir = Path("data/captures")
+    capture_files = [f.name for f in captures_dir.glob("*.cap") if f.is_file()]
+    capture_files += [f.name for f in captures_dir.glob("*.hccapx") if f.is_file()]
+    
+    # Get list of wordlist files
+    wordlists_dir = Path("data/wordlists")
+    wordlist_files = [f.name for f in wordlists_dir.glob("*.txt") if f.is_file()]
     
     return templates.TemplateResponse(
         "task_new_wpa.html",
-        {
-            "request": request, 
-            "active_page": "tasks",
-            "handshake_file": handshake_file,
-            "wordlist": wordlist
-        }
+        {"request": request, "capture_files": capture_files, "wordlist_files": wordlist_files, "active_page": "tasks", "user": current_user}
     )
 
 
 @app.get("/files/upload", response_class=HTMLResponse)
-async def upload_files_form(request: Request):
+async def upload_files_form(request: Request, current_user: User = Depends(get_current_active_user)):
     """Form to upload handshake and wordlist files"""
     # Get list of uploaded handshake files
     handshake_path = Path("uploads/handshakes")
@@ -185,7 +292,7 @@ async def upload_files_form(request: Request):
                     "name": file.name,
                     "path": str(file),
                     "size": f"{stats.st_size / 1024:.1f} KB",
-                    "uploaded_at": datetime.datetime.fromtimestamp(stats.st_mtime).strftime("%Y-%m-%d %H:%M")
+                    "uploaded_at": datetime.fromtimestamp(stats.st_mtime).strftime("%Y-%m-%d %H:%M")
                 })
     
     # Get list of uploaded wordlist files
@@ -199,7 +306,7 @@ async def upload_files_form(request: Request):
                     "name": file.name,
                     "path": str(file),
                     "size": f"{stats.st_size / 1024:.1f} KB",
-                    "uploaded_at": datetime.datetime.fromtimestamp(stats.st_mtime).strftime("%Y-%m-%d %H:%M")
+                    "uploaded_at": datetime.fromtimestamp(stats.st_mtime).strftime("%Y-%m-%d %H:%M")
                 })
     
     return templates.TemplateResponse(
@@ -208,7 +315,8 @@ async def upload_files_form(request: Request):
             "request": request, 
             "active_page": "tasks",
             "handshake_files": handshake_files,
-            "wordlist_files": wordlist_files
+            "wordlist_files": wordlist_files,
+            "user": current_user
         }
     )
 
@@ -302,7 +410,8 @@ async def task_detail(
     request: Request, 
     task_id: str, 
     task_usecase: TaskUseCase = Depends(get_task_usecase),
-    result_usecase: ResultUseCase = Depends(get_result_usecase)
+    result_usecase: ResultUseCase = Depends(get_result_usecase),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Task detail page"""
     task = await task_usecase.get_task_by_id(task_id)
@@ -314,7 +423,7 @@ async def task_detail(
     
     return templates.TemplateResponse(
         "task_detail.html",
-        {"request": request, "task": task, "results": results, "active_page": "tasks"}
+        {"request": request, "task": task, "results": results, "active_page": "tasks", "user": current_user}
     )
 
 
@@ -344,7 +453,8 @@ async def list_agents(
     request: Request, 
     status: Optional[str] = None,
     sort: str = "last_seen",
-    agent_usecase: AgentUseCase = Depends(get_agent_usecase)
+    agent_usecase: AgentUseCase = Depends(get_agent_usecase),
+    current_user: User = Depends(get_current_active_user)
 ):
     """List all agents with optional filtering"""
     # Get agents with status filter if provided
@@ -360,12 +470,12 @@ async def list_agents(
     
     return templates.TemplateResponse(
         "agents.html",
-        {"request": request, "agents": agents, "active_page": "agents", "current_status": status, "current_sort": sort}
+        {"request": request, "agents": agents, "active_page": "agents", "current_status": status, "current_sort": sort, "user": current_user}
     )
 
 
 @app.get("/agents/add", response_class=HTMLResponse)
-async def add_agent_form(request: Request):
+async def add_agent_form(request: Request, current_user: User = Depends(get_current_active_user)):
     """Show form to add a new agent"""
     # Generate a random API key for the new agent
     import secrets
@@ -374,7 +484,7 @@ async def add_agent_form(request: Request):
     
     return templates.TemplateResponse(
         "add_agent.html",
-        {"request": request, "active_page": "agents", "api_key": api_key}
+        {"request": request, "active_page": "agents", "api_key": api_key, "user": current_user}
     )
 
 
@@ -426,7 +536,8 @@ async def agent_detail(
     request: Request,
     agent_id: str,
     agent_usecase: AgentUseCase = Depends(get_agent_usecase),
-    task_usecase: TaskUseCase = Depends(get_task_usecase)
+    task_usecase: TaskUseCase = Depends(get_task_usecase),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Agent detail page"""
     agent = await agent_usecase.get_agent_by_id(agent_id)
@@ -441,7 +552,7 @@ async def agent_detail(
     
     return templates.TemplateResponse(
         "agent_detail.html",
-        {"request": request, "agent": agent, "current_task": current_task, "active_page": "agents"}
+        {"request": request, "agent": agent, "current_task": current_task, "active_page": "agents", "user": current_user}
     )
 
 
@@ -452,7 +563,8 @@ async def list_results(
     task_id: Optional[str] = None,
     hash_value: Optional[str] = None,
     plaintext: Optional[str] = None,
-    result_usecase: ResultUseCase = Depends(get_result_usecase)
+    result_usecase: ResultUseCase = Depends(get_result_usecase),
+    current_user: User = Depends(get_current_active_user)
 ):
     """List all results with optional filtering"""
     if task_id:
@@ -484,7 +596,8 @@ async def list_results(
             "task_id": task_id,
             "hash_value": hash_value,
             "plaintext": plaintext,
-            "active_page": "results"
+            "active_page": "results",
+            "user": current_user
         }
     )
 
@@ -547,6 +660,104 @@ async def delete_file(request: Request, path: str):
         file_path.unlink()
     
     return RedirectResponse(url="/files/upload", status_code=303)
+
+
+# User Profile route
+@app.get("/profile", response_class=HTMLResponse)
+async def user_profile(request: Request, current_user: User = Depends(get_current_active_user)):
+    """User profile page"""
+    
+    return templates.TemplateResponse(
+        "profile.html",
+        {"request": request, "user": current_user, "active_page": "profile"}
+    )
+
+
+# Simple debug endpoint to test API functionality
+@app.get("/api/debug", tags=["API"])
+async def debug_api():
+    """Simple debug endpoint to test if API is working"""
+    logger.info("Debug API endpoint called")
+    return {"status": "ok", "message": "API is working", "timestamp": str(datetime.now())}
+
+# API endpoint for performance data
+@app.get("/api/performance-data", tags=["API"])
+async def get_performance_data(
+    performance_usecase = Depends(get_performance_usecase)
+):
+    """Get system performance data for charts.
+    
+    Returns performance metrics for the dashboard charts including:
+    - Active agents over time
+    - Completed tasks over time
+    - System speed in MH/s over time
+    
+    The data is returned in a format suitable for Chart.js.
+    """
+    logger.info("Performance data API endpoint called")
+    
+    try:
+        # Get performance data from the usecase
+        result = await performance_usecase.get_hourly_performance_data(24)
+        
+        logger.info("Retrieved performance data successfully")
+        logger.info("Returning performance data response")
+        return result
+    except Exception as e:
+        logger.error(f"Error in performance data API: {str(e)}")
+        logger.exception("Exception details:")
+        return {"error": str(e)}
+
+
+# Scheduled task to record performance metrics every 30 seconds
+@app.on_event("startup")
+@repeat_every(seconds=30)  # Record metrics every 30 seconds
+async def record_performance_metrics():
+    """Record current performance metrics to the database"""
+    try:
+        # Get dependencies directly instead of using Depends
+        # This is necessary because we're outside of a request context
+        task_usecase = await get_task_usecase()
+        agent_usecase = await get_agent_usecase()
+        
+        # Get all tasks and agents
+        tasks = await task_usecase.get_all_tasks()
+        agents = await agent_usecase.get_all_agents()
+        
+        # Calculate metrics
+        active_agents = [a for a in agents if getattr(a, 'status', a.get('status', None)) == 'online']
+        active_agent_ids = [getattr(a, 'id', a.get('id', None)) for a in active_agents]
+        
+        completed_tasks_count = sum(1 for t in tasks 
+                                  if getattr(t, 'status', t.get('status', None)) == TaskStatus.COMPLETED)
+        
+        # In a real system, you would get the actual speed from agents
+        total_speed = sum(getattr(a, 'speed', a.get('speed', 0)) for a in active_agents)
+        
+        # Log the metrics
+        logger.info(f"Recorded performance metrics: {len(active_agents)} active agents, {completed_tasks_count} completed tasks, {total_speed/1000000:.2f} MH/s")
+        
+        # If we're using a real database, save the metrics
+        if not os.getenv("USE_MOCK_DATABASE", "true").lower() == "true":
+            from model.performance import PerformanceMetric
+            from repository.performance_repository import PerformanceRepository
+            
+            db = await get_database()
+            repo = PerformanceRepository(db.performance_metrics)
+            
+            metric = PerformanceMetric(
+                timestamp=datetime.datetime.now(),
+                active_agents=len(active_agents),
+                completed_tasks=completed_tasks_count,
+                speed=total_speed,
+                agent_ids=active_agent_ids
+            )
+            
+            await repo.save_metric(metric)
+            logger.info("Saved performance metrics to database")
+    except Exception as e:
+        logger.error(f"Failed to record performance metrics: {str(e)}")
+        logger.exception("Exception details:")
 
 
 async def main():

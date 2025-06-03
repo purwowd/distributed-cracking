@@ -82,6 +82,12 @@ The web interface will be available at `http://localhost:8080` by default.
 
 ## Security Considerations
 
-- The web interface currently does not implement authentication
-- Consider adding authentication for production use
-- API keys for agents are managed separately from the web interface
+The web interface implements several security features:
+
+- **JWT-based Authentication**: Secure login with HTTP-only cookies
+- **Role-based Access Control**: Different permission levels (admin, user, viewer)
+- **Password Security**: Bcrypt hashing for secure password storage
+
+For additional security considerations, see the [security documentation](../../docs/security.md).
+
+> **Note for Users**: For detailed instructions on using the web interface, refer to the [Web Interface User Guide](../../docs/web_interface.md).

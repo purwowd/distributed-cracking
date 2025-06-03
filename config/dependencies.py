@@ -14,9 +14,13 @@ from config.mock_database import mock_db
 from repository.task_repository import TaskRepository
 from repository.agent_repository import AgentRepository
 from repository.result_repository import ResultRepository
+from repository.performance_repository import PerformanceRepository
+from repository.user_repository import UserRepository
 from usecase.task_usecase import TaskUseCase
 from usecase.agent_usecase import AgentUseCase
 from usecase.result_usecase import ResultUseCase
+from usecase.performance_usecase import PerformanceUseCase
+from usecase.user_usecase import UserUseCase
 from usecase.mock_usecases import MockTaskUseCase, MockAgentUseCase, MockResultUseCase
 
 # Check if we should use mock database
@@ -88,3 +92,39 @@ async def get_result_usecase(
     if USE_MOCK:
         return MockResultUseCase()
     return ResultUseCase(result_repo)
+
+
+async def get_performance_repository(db=Depends(get_database)):
+    """Get performance repository instance"""
+    if USE_MOCK:
+        return None  # Mock usecases don't use repositories
+    return PerformanceRepository(db.performance_metrics)
+
+
+async def get_performance_usecase(
+    performance_repo=Depends(get_performance_repository),
+    agent_usecase=Depends(get_agent_usecase),
+    task_usecase=Depends(get_task_usecase)
+):
+    """Get performance usecase instance"""
+    if USE_MOCK:
+        # Return mock performance usecase
+        return PerformanceUseCase(None, agent_usecase, task_usecase)
+    return PerformanceUseCase(performance_repo, agent_usecase, task_usecase)
+
+
+async def get_user_repository(db=Depends(get_database)):
+    """Get user repository instance"""
+    if USE_MOCK:
+        return None  # Mock usecases don't use repositories
+    return UserRepository(db)
+
+
+async def get_user_usecase(user_repo=Depends(get_user_repository)):
+    """Get user usecase instance"""
+    if USE_MOCK:
+        # For now, we don't have a mock user usecase
+        # Create a real one with a repository
+        repo = UserRepository(mock_db)
+        return UserUseCase(repo)
+    return UserUseCase(user_repo)

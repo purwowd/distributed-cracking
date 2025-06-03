@@ -3,67 +3,69 @@
 {% block title %}Agents - Distributed Hashcat Cracking{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-pc-display"></i> Agents</h1>
+<div class="py-4">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 class="text-2xl font-bold text-gray-200 flex items-center">
+            <i class="fa-solid fa-desktop mr-2 text-blue-400"></i> Agents
+        </h1>
         <div>
-            <a href="/agents/add" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Add Agent
+            <a href="/agents/add" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-all duration-200 flex items-center shadow-md">
+                <i class="fa-solid fa-plus mr-2"></i> Add Agent
             </a>
         </div>
     </div>
     
     <!-- Agent Filters -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="card-title mb-0">Filters</h5>
+    <div class="bg-gray-800 rounded-lg shadow-lg mb-6 overflow-hidden border border-gray-700">
+        <div class="bg-gray-900 px-4 py-3 border-b border-gray-700">
+            <h5 class="font-medium text-gray-200">Filters</h5>
         </div>
-        <div class="card-body">
-            <form action="/agents" method="get" class="row g-3">
-                <div class="col-md-4">
-                    <label for="status" class="form-label">Status</label>
-                    <select name="status" id="status" class="form-select">
+        <div class="p-4">
+            <form action="/agents" method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                    <select name="status" id="status" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="" {% if current_status is not defined or current_status is none %}selected{% endif %}>All</option>
                         <option value="online" {% if current_status == "online" %}selected{% endif %}>Online</option>
                         <option value="offline" {% if current_status == "offline" %}selected{% endif %}>Offline</option>
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <label for="sort" class="form-label">Sort By</label>
-                    <select name="sort" id="sort" class="form-select">
-                        <option value="last_seen" {% if current_sort is not defined or current_sort == "last_seen" %}selected{% endif %}>Last Seen</option>
-                        <option value="name" {% if current_sort == "name" %}selected{% endif %}>Name</option>
-                        <option value="registered_at" {% if current_sort == "registered_at" %}selected{% endif %}>Registration Date</option>
+                <div>
+                    <label for="sort_by" class="block text-sm font-medium text-gray-300 mb-1">Sort By</label>
+                    <select name="sort_by" id="sort_by" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="last_seen" {% if current_sort_by == "last_seen" %}selected{% endif %}>Last Seen</option>
+                        <option value="name" {% if current_sort_by == "name" %}selected{% endif %}>Name</option>
+                        <option value="status" {% if current_sort_by == "status" %}selected{% endif %}>Status</option>
                     </select>
                 </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-md">Apply Filters</button>
                 </div>
             </form>
         </div>
     </div>
     
     <!-- Agent List -->
-    <div class="row row-cols-1 row-cols-md-3 g-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for agent in agents %}
-        <div class="col">
-            <div class="card h-100 shadow-sm">
-                <div class="card-header {% if agent.is_available is defined and agent.is_available() %}bg-success text-white{% elif agent.status is defined and agent.status == 'online' %}bg-success text-white{% elif agent.current_task_id is defined and agent.current_task_id %}bg-primary text-white{% elif agent.status is defined and agent.status == 'busy' %}bg-primary text-white{% else %}bg-secondary text-white{% endif %}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">{{ agent.name }}</h5>
+        <div>
+            <div class="bg-gray-800 rounded-lg shadow-lg h-full flex flex-col overflow-hidden border border-gray-700">
+                <div class="{% if agent.is_available is defined and agent.is_available() %}bg-green-500 text-white{% elif agent.status is defined and agent.status == 'online' %}bg-green-500 text-white{% elif agent.current_task_id is defined and agent.current_task_id %}bg-blue-500 text-white{% elif agent.status is defined and agent.status == 'busy' %}bg-blue-500 text-white{% else %}bg-gray-600 text-white{% endif %} px-4 py-3 border-b border-gray-700">
+                    <div class="flex justify-between items-center">
+                        <h5 class="font-semibold">{{ agent.name }}</h5>
                         {% if agent.is_available is defined and agent.is_available() or agent.status is defined and agent.status == 'online' %}
-                        <span class="badge bg-light text-success">Online</span>
+                        <span class="bg-gray-900 text-green-400 text-xs font-semibold px-2.5 py-1 rounded-md border border-green-500">Online</span>
                         {% elif agent.current_task_id is defined and agent.current_task_id or agent.status is defined and agent.status == 'busy' %}
-                        <span class="badge bg-light text-primary">Busy</span>
+                        <span class="bg-gray-900 text-blue-400 text-xs font-semibold px-2.5 py-1 rounded-md border border-blue-500">Busy</span>
                         {% else %}
-                        <span class="badge bg-light text-secondary">Offline</span>
+                        <span class="bg-gray-900 text-gray-400 text-xs font-semibold px-2.5 py-1 rounded-md border border-gray-500">Offline</span>
                         {% endif %}
                     </div>
                 </div>
-                <div class="card-body">
-                    <p class="mb-1"><strong>Hostname:</strong> {{ agent.hostname if agent.hostname is defined else agent.get('hostname', 'Unknown') }}</p>
-                    <p class="mb-1"><strong>IP Address:</strong> {{ agent.ip_address if agent.ip_address is defined else agent.get('ip_address', 'Unknown') }}</p>
-                    <p class="mb-1"><strong>Last Seen:</strong> 
+                <div class="p-4 flex-grow text-gray-300">
+                    <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Hostname:</span> {{ agent.hostname if agent.hostname is defined else agent.get('hostname', 'Unknown') }}</p>
+                    <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">IP Address:</span> {{ agent.ip_address if agent.ip_address is defined else agent.get('ip_address', 'Unknown') }}</p>
+                    <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Last Seen:</span> 
                         {% if agent.last_seen is defined %}
                             {{ agent.last_seen.strftime('%Y-%m-%d %H:%M:%S') }}
                         {% elif agent.get('last_seen') %}
@@ -72,7 +74,7 @@
                             Unknown
                         {% endif %}
                     </p>
-                    <p class="mb-1"><strong>Registered:</strong> 
+                    <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Registered:</span> 
                         {% if agent.registered_at is defined %}
                             {{ agent.registered_at.strftime('%Y-%m-%d %H:%M:%S') }}
                         {% elif agent.get('registered_at') %}
@@ -83,24 +85,24 @@
                     </p>
                     
                     {% if agent.hashcat_version is defined and agent.hashcat_version or agent.get('hashcat_version') %}
-                    <p class="mb-1"><strong>Hashcat Version:</strong> {{ agent.hashcat_version if agent.hashcat_version is defined else agent.get('hashcat_version') }}</p>
+                    <p class="mb-2 text-sm"><span class="font-semibold text-blue-400">Hashcat Version:</span> {{ agent.hashcat_version if agent.hashcat_version is defined else agent.get('hashcat_version') }}</p>
                     {% endif %}
                     
                     {% if agent.current_task_id is defined and agent.current_task_id or agent.get('current_task_id') %}
-                    <div class="alert alert-primary mt-3">
-                        <p class="mb-1"><strong>Current Task:</strong> <a href="/tasks/{{ agent.current_task_id if agent.current_task_id is defined else agent.get('current_task_id') }}" class="text-white">View Task</a></p>
+                    <div class="bg-gray-900 border-l-4 border-blue-500 p-3 mt-3 rounded border border-gray-700">
+                        <p class="mb-0 text-sm"><span class="font-semibold text-blue-400">Current Task:</span> <a href="/tasks/{{ agent.current_task_id if agent.current_task_id is defined else agent.get('current_task_id') }}" class="text-blue-400 hover:text-blue-300 hover:underline">View Task</a></p>
                     </div>
                     {% endif %}
                     
                     {% if agent.gpu_info is defined and agent.gpu_info or agent.get('gpu_info') %}
-                    <div class="mt-3">
-                        <h6>GPU Information:</h6>
-                        <ul class="list-group list-group-flush">
+                    <div class="mt-4">
+                        <h6 class="font-semibold mb-2 text-sm text-blue-400">GPU Information:</h6>
+                        <ul class="divide-y divide-gray-700">
                             {% for gpu in (agent.gpu_info if agent.gpu_info is defined else agent.get('gpu_info', [])) %}
-                            <li class="list-group-item px-0">
-                                <strong>{{ gpu.name if gpu.name is defined else gpu.get('name', 'Unknown GPU') }}</strong>
+                            <li class="py-2">
+                                <span class="font-semibold text-sm text-gray-200">{{ gpu.name if gpu.name is defined else gpu.get('name', 'Unknown GPU') }}</span>
                                 {% if gpu.memory_total_mb is defined and gpu.memory_total_mb or gpu.get('memory_total_mb') %}
-                                <br>Memory: {{ gpu.memory_total_mb if gpu.memory_total_mb is defined else gpu.get('memory_total_mb') }} MB
+                                <div class="text-xs text-gray-400 mt-1">Memory: {{ gpu.memory_total_mb if gpu.memory_total_mb is defined else gpu.get('memory_total_mb') }} MB</div>
                                 {% endif %}
                             </li>
                             {% endfor %}
@@ -108,12 +110,12 @@
                     </div>
                     {% endif %}
                 </div>
-                <div class="card-footer">
-                    <div class="d-flex justify-content-between">
-                        <a href="/agents/{{ agent.id if agent.id is defined else agent.get('id') }}" class="btn btn-sm btn-primary">View Details</a>
-                        <form action="/agents/{{ agent.id if agent.id is defined else agent.get('id') }}/delete" method="post" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this agent?')">
-                                <i class="bi bi-trash"></i> Delete
+                <div class="px-4 py-3 bg-gray-900 border-t border-gray-700">
+                    <div class="flex justify-between">
+                        <a href="/agents/{{ agent.id if agent.id is defined else agent.get('id') }}" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-1.5 px-3 rounded transition-all duration-200 shadow-md">View Details</a>
+                        <form action="/agents/{{ agent.id if agent.id is defined else agent.get('id') }}/delete" method="post">
+                            <button type="submit" class="bg-gray-800 border border-red-500 text-red-400 hover:bg-red-500 hover:text-white text-sm font-medium py-1.5 px-3 rounded transition-all duration-200 shadow-md" onclick="return confirm('Are you sure you want to delete this agent?')">
+                                <i class="fa-solid fa-trash-can"></i> Delete
                             </button>
                         </form>
                     </div>
@@ -121,9 +123,9 @@
             </div>
         </div>
         {% else %}
-        <div class="col-12">
-            <div class="alert alert-info">
-                No agents found. Agents will register automatically when they connect to the server.
+        <div class="col-span-full">
+            <div class="bg-gray-800 border-l-4 border-blue-500 text-gray-300 p-4 rounded border border-gray-700">
+                <i class="fa-solid fa-info-circle text-blue-400 mr-2"></i> No agents found. Agents will register automatically when they connect to the server.
             </div>
         </div>
         {% endfor %}

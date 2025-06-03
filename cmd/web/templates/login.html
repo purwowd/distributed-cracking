@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Distributed Hashcat Cracking</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/custom.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                        success: '#22c55e',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        info: '#3b82f6'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-900 text-white h-screen flex items-center justify-center">
+    <div class="w-full max-w-md p-8 space-y-8 bg-gray-800 rounded-lg shadow-xl">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold flex items-center justify-center">
+                <i class="fa-solid fa-cat text-white mr-3 text-2xl"></i>
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-500">Distributed Cracking</span>
+            </h1>
+            <p class="mt-2 text-gray-400">Login to access the dashboard</p>
+        </div>
+        
+        {% if error %}
+        <div class="p-4 mb-4 text-sm rounded-lg bg-red-900/50 text-red-300" role="alert">
+            <span class="font-medium"><i class="fa-solid fa-circle-exclamation mr-2"></i>Error:</span> {{ error }}
+        </div>
+        {% endif %}
+        
+        <form class="mt-8 space-y-6" method="post" action="/login">
+            <div class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-300">Username</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" id="username" name="username" required 
+                               class="bg-gray-700 block w-full pl-10 pr-3 py-2 border border-gray-600 rounded-md leading-5 text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-300">Password</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-lock text-gray-400"></i>
+                        </div>
+                        <input type="password" id="password" name="password" required 
+                               class="bg-gray-700 block w-full pl-10 pr-3 py-2 border border-gray-600 rounded-md leading-5 text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" 
+                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <i class="fa-solid fa-sign-in-alt text-blue-400 group-hover:text-blue-300"></i>
+                    </span>
+                    Sign in
+                </button>
+            </div>
+        </form>
+        
+        <div class="text-center text-sm text-gray-500 mt-4">
+            <p>Distributed Hashcat Cracking System</p>
+        </div>
+    </div>
+</body>
+</html>

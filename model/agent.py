@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from entity.agent import AgentStatus
+from model.examples import AGENT_EXAMPLES, HEARTBEAT_EXAMPLES
 
 
 class AgentBase(BaseModel):
@@ -19,6 +20,12 @@ class AgentCreate(AgentBase):
     cpu_info: Optional[Dict[str, Any]] = Field(default_factory=dict)
     hashcat_version: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    
+    model_config = {
+        "json_schema_extra": {
+            "examples": AGENT_EXAMPLES
+        }
+    }
 
 
 class AgentUpdate(BaseModel):
@@ -55,6 +62,12 @@ class AgentResponse(AgentBase):
 class AgentHeartbeat(BaseModel):
     """Model for agent heartbeat"""
     status: AgentStatus
-    current_task_id: Optional[str] = None
-    task_progress: Optional[float] = None
-    task_speed: Optional[float] = None
+    cpu_usage: float = Field(0.0, ge=0.0, le=100.0, description="CPU usage percentage")
+    gpu_usage: List[Dict[str, Any]] = Field(default_factory=list, description="GPU usage information")
+    memory_usage: int = Field(0, ge=0, description="Memory usage in MB")
+    
+    model_config = {
+        "json_schema_extra": {
+            "examples": HEARTBEAT_EXAMPLES
+        }
+    }

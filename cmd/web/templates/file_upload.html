@@ -3,53 +3,55 @@
 {% block title %}Upload Files - Distributed Hashcat Cracking{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-cloud-upload"></i> Upload Files</h1>
-        <div class="d-flex gap-2">
-            <a href="/tasks/new-wpa" class="btn btn-success">
-                <i class="bi bi-wifi"></i> Create WPA Task
+<div class="py-4">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 class="text-2xl font-bold text-gray-200 flex items-center">
+            <i class="fa-solid fa-cloud-arrow-up mr-2 text-blue-400"></i> Upload Files
+        </h1>
+        <div class="flex flex-wrap gap-2">
+            <a href="/tasks/new-wpa" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-all duration-200 flex items-center shadow-md">
+                <i class="fa-solid fa-wifi mr-2"></i> Create WPA Task
             </a>
-            <a href="/tasks" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Tasks
+            <a href="/tasks" class="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-all duration-200 flex items-center shadow-md">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Back to Tasks
             </a>
         </div>
     </div>
     
-    <div class="row">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Handshake Files Upload -->
-        <div class="col-md-6">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0"><i class="bi bi-wifi"></i> Upload Handshake Files</h5>
+        <div>
+            <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6 border border-gray-700">
+                <div class="bg-gray-900 px-4 py-3 border-b border-gray-700">
+                    <h5 class="font-semibold text-gray-200 flex items-center"><i class="fas fa-wifi mr-2 text-blue-400"></i> Upload Handshake Files</h5>
                 </div>
-                <div class="card-body">
+                <div class="p-4">
                     <form action="/upload/handshake" method="post" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label for="handshake_file" class="form-label">Select Handshake File (.hccapx, .cap, .pcap)</label>
-                            <input class="form-control" type="file" id="handshake_file" name="file" accept=".hccapx,.cap,.pcap">
-                            <div class="form-text">Upload WPA/WPA2 handshake files for cracking</div>
+                        <div class="mb-4">
+                            <label for="handshake_file" class="block text-sm font-medium text-gray-300 mb-1">Select Handshake File (.hccapx, .cap, .pcap)</label>
+                            <input class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" type="file" id="handshake_file" name="file" accept=".hccapx,.cap,.pcap">
+                            <p class="mt-1 text-xs text-gray-400">Upload WPA/WPA2 handshake files for cracking</p>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Upload Handshake</button>
+                        <div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-all duration-200 shadow-md">Upload Handshake</button>
                         </div>
                     </form>
                     
                     {% if handshake_files %}
-                    <hr>
-                    <h6>Available Handshake Files</h6>
-                    <div class="list-group">
+                    <hr class="my-4 border-gray-700">
+                    <h6 class="font-semibold text-blue-400 mb-2">Available Handshake Files</h6>
+                    <div class="space-y-2">
                         {% for file in handshake_files %}
-                        <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div class="border border-gray-700 bg-gray-900 rounded-md p-3 flex justify-between items-center hover:bg-gray-800">
                             <div>
-                                <i class="bi bi-file-earmark-binary"></i> {{ file.name }}
-                                <small class="text-muted d-block">{{ file.size }} - {{ file.uploaded_at }}</small>
+                                <div class="font-medium text-sm text-gray-200"><i class="fas fa-file-code mr-2 text-blue-400"></i> {{ file.name }}</div>
+                                <small class="text-gray-400 text-xs block">{{ file.size }} - {{ file.uploaded_at }}</small>
                             </div>
-                            <div class="btn-group">
-                                <a href="/tasks/new-wpa?file={{ file.path | urlencode }}" class="btn btn-sm btn-outline-primary">Use</a>
-                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                            <div class="flex space-x-2">
+                                <a href="/tasks/new-wpa?file={{ file.path | urlencode }}" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-1 px-2 rounded transition-all duration-200 shadow-sm">Use</a>
+                                <button type="button" class="bg-red-600 hover:bg-red-700 text-white text-xs font-medium py-1 px-2 rounded transition-all duration-200 shadow-sm" 
                                         onclick="if(confirm('Delete this file?')) window.location.href='/delete/file?path={{ file.path | urlencode }}'">
-                                    <i class="bi bi-trash"></i>
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
                         </div>
@@ -61,38 +63,38 @@
         </div>
         
         <!-- Wordlist Files Upload -->
-        <div class="col-md-6">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0"><i class="bi bi-journal-text"></i> Upload Wordlist Files</h5>
+        <div>
+            <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6 border border-gray-700">
+                <div class="bg-gray-900 px-4 py-3 border-b border-gray-700">
+                    <h5 class="font-semibold text-gray-200 flex items-center"><i class="fas fa-book mr-2 text-blue-400"></i> Upload Wordlist Files</h5>
                 </div>
-                <div class="card-body">
+                <div class="p-4">
                     <form action="/upload/wordlist" method="post" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label for="wordlist_file" class="form-label">Select Wordlist File (.txt, .dict)</label>
-                            <input class="form-control" type="file" id="wordlist_file" name="file" accept=".txt,.dict">
-                            <div class="form-text">Upload wordlist files for password cracking</div>
+                        <div class="mb-4">
+                            <label for="wordlist_file" class="block text-sm font-medium text-gray-300 mb-1">Select Wordlist File (.txt, .dict)</label>
+                            <input class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" type="file" id="wordlist_file" name="file" accept=".txt,.dict">
+                            <p class="mt-1 text-xs text-gray-400">Upload wordlist files for password cracking</p>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Upload Wordlist</button>
+                        <div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-all duration-200 shadow-md">Upload Wordlist</button>
                         </div>
                     </form>
                     
                     {% if wordlist_files %}
-                    <hr>
-                    <h6>Available Wordlist Files</h6>
-                    <div class="list-group">
+                    <hr class="my-4 border-gray-700">
+                    <h6 class="font-semibold text-blue-400 mb-2">Available Wordlist Files</h6>
+                    <div class="space-y-2">
                         {% for file in wordlist_files %}
-                        <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div class="border border-gray-700 bg-gray-900 rounded-md p-3 flex justify-between items-center hover:bg-gray-800">
                             <div>
-                                <i class="bi bi-file-earmark-text"></i> {{ file.name }}
-                                <small class="text-muted d-block">{{ file.size }} - {{ file.uploaded_at }}</small>
+                                <div class="font-medium text-sm text-gray-200"><i class="fas fa-file-alt mr-2 text-blue-400"></i> {{ file.name }}</div>
+                                <small class="text-gray-400 text-xs block">{{ file.size }} - {{ file.uploaded_at }}</small>
                             </div>
-                            <div class="btn-group">
-                                <a href="/tasks/new-wpa?wordlist={{ file.path | urlencode }}" class="btn btn-sm btn-outline-primary">Use</a>
-                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                            <div class="flex space-x-2">
+                                <a href="/tasks/new-wpa?wordlist={{ file.path | urlencode }}" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-1 px-2 rounded transition-all duration-200 shadow-sm">Use</a>
+                                <button type="button" class="bg-red-600 hover:bg-red-700 text-white text-xs font-medium py-1 px-2 rounded transition-all duration-200 shadow-sm" 
                                         onclick="if(confirm('Delete this file?')) window.location.href='/delete/file?path={{ file.path | urlencode }}'">
-                                    <i class="bi bi-trash"></i>
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
                         </div>
@@ -105,40 +107,40 @@
     </div>
     
     <!-- Default Wordlists Section -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-light">
-            <h5 class="card-title mb-0"><i class="bi bi-list-ul"></i> Default Wordlists</h5>
+    <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6 border border-gray-700">
+        <div class="bg-gray-900 px-4 py-3 border-b border-gray-700">
+            <h5 class="font-semibold text-gray-200 flex items-center"><i class="fas fa-list mr-2 text-blue-400"></i> Default Wordlists</h5>
         </div>
-        <div class="card-body">
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> These are common wordlists available in the system
+        <div class="p-4">
+            <div class="bg-gray-900 border-l-4 border-blue-500 text-blue-400 p-4 mb-4 rounded border border-gray-700">
+                <i class="fas fa-info-circle mr-2"></i> These are common wordlists available in the system
             </div>
             
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-700">
+                    <thead class="bg-gray-900">
                         <tr>
-                            <th>Name</th>
-                            <th>Size</th>
-                            <th>Description</th>
-                            <th>Action</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Size</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Description</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>rockyou.txt</td>
-                            <td>133 MB</td>
-                            <td>The classic RockYou password database leak, containing 14 million passwords</td>
-                            <td>
-                                <a href="/tasks/new-wpa?wordlist=rockyou.txt" class="btn btn-sm btn-outline-primary">Use</a>
+                    <tbody class="bg-gray-800 divide-y divide-gray-700">
+                        <tr class="hover:bg-gray-700">
+                            <td class="px-4 py-3 text-sm text-gray-300">rockyou.txt</td>
+                            <td class="px-4 py-3 text-sm text-gray-300">133 MB</td>
+                            <td class="px-4 py-3 text-sm text-gray-300">The classic RockYou password database leak, containing 14 million passwords</td>
+                            <td class="px-4 py-3 text-sm">
+                                <a href="/tasks/new-wpa?wordlist=rockyou.txt" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-1 px-2 rounded transition-all duration-200 shadow-sm">Use</a>
                             </td>
                         </tr>
-                        <tr>
-                            <td>darkweb2017-top10000.txt</td>
-                            <td>95 KB</td>
-                            <td>Top 10,000 most common passwords from darkweb leaks</td>
-                            <td>
-                                <a href="/tasks/new-wpa?wordlist=darkweb2017-top10000.txt" class="btn btn-sm btn-outline-primary">Use</a>
+                        <tr class="hover:bg-gray-700">
+                            <td class="px-4 py-3 text-sm text-gray-300">darkweb2017-top10000.txt</td>
+                            <td class="px-4 py-3 text-sm text-gray-300">95 KB</td>
+                            <td class="px-4 py-3 text-sm text-gray-300">Top 10,000 most common passwords from darkweb leaks</td>
+                            <td class="px-4 py-3 text-sm">
+                                <a href="/tasks/new-wpa?wordlist=darkweb2017-top10000.txt" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-1 px-2 rounded transition-all duration-200 shadow-sm">Use</a>
                             </td>
                         </tr>
                     </tbody>

@@ -67,9 +67,42 @@ class AgentUseCase:
         """Update agent status"""
         return await self.agent_repo.update_status(agent_id, status)
     
-    async def update_heartbeat(self, agent_id: str) -> Optional[Agent]:
-        """Update agent heartbeat"""
-        return await self.agent_repo.update_heartbeat(agent_id)
+    async def update_heartbeat(self, agent_id: str, status: AgentStatus, 
+                             cpu_usage: float, gpu_usage: List[Dict[str, Any]],
+                             memory_usage: int) -> Optional[Agent]:
+        """Update agent heartbeat with resource usage information
+        
+        Args:
+            agent_id: Agent ID
+            status: Current agent status
+            cpu_usage: CPU usage percentage (0-100)
+            gpu_usage: List of GPU usage information
+            memory_usage: Memory usage in MB
+            
+        Returns:
+            Updated agent or None if agent not found
+        """
+        # Update agent status
+        agent = await self.agent_repo.update_status(agent_id, status)
+        if not agent:
+            return None
+            
+        # Update agent heartbeat timestamp
+        agent = await self.agent_repo.update_heartbeat(agent_id)
+        
+        # Update agent resource usage in metadata
+        if not agent.metadata:
+            agent.metadata = {}
+            
+        agent.metadata["resource_usage"] = {
+            "cpu_usage": cpu_usage,
+            "gpu_usage": gpu_usage,
+            "memory_usage": memory_usage,
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        
+        # Save updated agent
+        return await self.agent_repo.update(agent)
     
     async def process_heartbeat(self, agent_id: str, status: AgentStatus, 
                               current_task_id: Optional[str] = None,
